@@ -322,7 +322,7 @@ def cmd_ingresar(message):
         input_field_placeholder="¿Quieres mostrar tu nombre en el #aporte?"
     )
     markup.add("Si", "No")
-    msg=bot.send_message(message.chat.id, "¿Quieres mostrar tu nombre en el aporte?\n\n(Presiona en '<b>No</b>' Para que sea un aporte anónimo)", reply_markup=markup)
+    msg=bot.send_message(message.chat.id, "¿Quieres mostrar tu nombre en el aporte?\n\n(Presiona en '<b>Si</b>' Para que se envíe tu usuario como autor'\nPresiona <b>No</b>' Para que sea un aporte anónimo)", reply_markup=markup)
     bot.register_next_step_handler(msg, hacer_aporte)
     
 def hacer_aporte(message):
@@ -338,7 +338,7 @@ def hacer_aporte(message):
         mostrar_nombre=True
     
     
-    msg=bot.send_message(message.chat.id, f"Perfecto!\nAcontinuación <b>ENVÍAME</b> lo que quieres que se publique :) \n\n<u>Contenido Aceptado por el Bot</u>:\n<b>Imágenes</b>\n<b>Vídeos</b>\n<b>Música</b>\n<b>Documentos</b> (PDF, EPUB, etcétera)\n <b>Encuestas</b> que envíe El Usuario\n-Más allá de esos archivos, no serán aceptado a no ser que a futuro @{bot.get_chat(admin).username} lo decida-\n\nNota Importante:\nEl límite de peso de los documentos es de 50 MB mientras que para los vídeos, fotos y archivos de audio son de 20 MB, no sobrepases el límite con el peso de tus archivos o no se enviará lo que quieres compartir")
+    msg=bot.send_message(message.chat.id, f"Perfecto! Acontinuación <b>ENVÍAME</b> lo que quieres que se publique :) \n\n<u>Contenido Aceptado por el Bot</u>:\n<b>Imágenes</b>\n<b>Vídeos</b>\n<b>Música</b>\n<b>Documentos</b> (PDF, EPUB, etcétera)\n <b>Encuestas</b> que envíe El Usuario\n-Más allá de esos archivos, no serán aceptado a no ser que a futuro @{bot.get_chat(admin).username} lo decida-\n\nNota Importante:\nEl límite de peso de los documentos es de 50 MB mientras que para los vídeos, fotos y archivos de audio son de 20 MB, no sobrepases el límite con el peso de tus archivos o no se enviará lo que quieres compartir")
     bot.register_next_step_handler(msg, recibir_publicacion, mostrar_nombre)
     
     
