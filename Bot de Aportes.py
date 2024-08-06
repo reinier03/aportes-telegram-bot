@@ -493,18 +493,20 @@ def cmd_recibir_cualquier_mensaje(message):
 
 
 
+try:
+    request.host_url
+except:
+    app = Flask(__name__)
 
-app = Flask(__name__)
+    @app.route('/', methods=['POST'])
+    def index():
+        if request.headers.get("content-type")=="aplication/json":
+            update= telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
+            bot.process_new_updates([update])
+            return 'OK', 200
 
-@app.route('/', methods=['POST'])
-def index():
-    if request.headers.get("content-type")=="aplication/json":
-        update= telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
-        bot.process_new_updates([update])
-        return 'OK', 200
-
-def flask():
-    app.run(host="0.0.0.0", port=5000)
+    def flask():
+        app.run(host="0.0.0.0", port=5000)
 
 
 
