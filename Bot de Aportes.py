@@ -13,7 +13,8 @@ import dill
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
-canal=os.environ["canal"]
+# canal=os.environ["canal"]
+canal="@reimaprueba"
 bot=telebot.TeleBot(os.environ["token"], parse_mode="html", disable_web_page_preview=True)
 
 diccionario_publicaciones={}
