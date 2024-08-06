@@ -368,7 +368,8 @@ def recibir_publicacion(message, mostrar_nombre):
                 else:
                     contador+=1
                 
-        diccionario_publicaciones[message.chat.id].append(f"{message.audio.file_name[contador:]}")
+            diccionario_publicaciones[message.chat.id].append(f"{message.audio.file_name[contador:]}")
+            
         diccionario_publicaciones[message.chat.id].append(bot.get_file(message.audio.file_id).file_path)
         diccionario_publicaciones[message.chat.id].append("audio")
     
