@@ -338,7 +338,7 @@ def hacer_aporte(message):
         mostrar_nombre=True
     
     
-    msg=bot.send_message(message.chat.id, "Perfecto!\nAcontinuación <b>ENVÍAME</b> lo que quieres que se publique :) \n\n<u>Contenido Aceptado por el Bot</u>:\n<b>Imágenes</b>\n<b>Vídeos</b>\n<b>Música</b>\n<b>Documentos</b> (PDF, EPUB, etcétera)\n <b>Encuestas</b> que envíe El Usuario\n-Más allá de esos archivos, no serán aceptado a no ser que a futuro @{bot.get_chat(admin).username} lo decida-\n\nNota Importante:\nEl límite de peso de los documentos es de 50 MB mientras que para los vídeos, fotos y archivos de audio son de 20 MB, no sobrepases el límite con el peso de tus archivos o no se enviará lo que quieres compartir")
+    msg=bot.send_message(message.chat.id, f"Perfecto!\nAcontinuación <b>ENVÍAME</b> lo que quieres que se publique :) \n\n<u>Contenido Aceptado por el Bot</u>:\n<b>Imágenes</b>\n<b>Vídeos</b>\n<b>Música</b>\n<b>Documentos</b> (PDF, EPUB, etcétera)\n <b>Encuestas</b> que envíe El Usuario\n-Más allá de esos archivos, no serán aceptado a no ser que a futuro @{bot.get_chat(admin).username} lo decida-\n\nNota Importante:\nEl límite de peso de los documentos es de 50 MB mientras que para los vídeos, fotos y archivos de audio son de 20 MB, no sobrepases el límite con el peso de tus archivos o no se enviará lo que quieres compartir")
     bot.register_next_step_handler(msg, recibir_publicacion, mostrar_nombre)
     
     
@@ -395,72 +395,73 @@ def recibir_publicacion(message, mostrar_nombre):
 
 
 
-
-    for nombre, enlace, tipo_archivo in diccionario_publicaciones[message.chat.id]:
-        with open(nombre, "wb") as archive:
-            archive.write(bot.download_file(enlace))
+    # nombre = diccionario_publicaciones[message.chat.id][0]
+    # enlace= tipo_archivo=diccionario_publicaciones[message.chat.id][2]
+    # tipo_archivo = diccionario_publicaciones[message.chat.id][2]
+    
+    with open(diccionario_publicaciones[message.chat.id][0], "wb") as archive:
+        archive.write(bot.download_file(diccionario_publicaciones[message.chat.id][1]))
+        
+    with open(diccionario_publicaciones[message.chat.id][0], "rb") as archive:
+        if message.caption:
+            if diccionario_publicaciones[message.chat.id][2]=="photo":
+                if mostrar_nombre==False:
+                    bot.send_photo(canal, photo=archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                else:                        
+                    bot.send_photo(canal, photo=archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                
+            elif diccionario_publicaciones[message.chat.id][2]=="video":
+                if mostrar_nombre==False:
+                    bot.send_video(canal, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                else:                        
+                    bot.send_video(canal, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                
+            elif diccionario_publicaciones[message.chat.id][2]=="audio":
+                if mostrar_nombre==False:
+                    bot.send_audio(canal, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                else:                        
+                    bot.send_audio(canal, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                
+            else:
+                if mostrar_nombre==False:
+                    bot.send_document(canal, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                else:                        
+                    bot.send_document(canal, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
             
-        with open(nombre, "rb") as archive:
-            if message.caption:
-                if tipo_archivo=="photo":
-                    if mostrar_nombre==False:
-                        bot.send_photo(canal, photo=archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    else:                        
-                        bot.send_photo(canal, photo=archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    
-                elif message.content_type=="video":
-                    if mostrar_nombre==False:
-                        bot.send_video(canal, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    else:                        
-                        bot.send_video(canal, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    
-                elif message.content_type=="audio":
-                    if mostrar_nombre==False:
-                        bot.send_audio(canal, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    else:                        
-                        bot.send_audio(canal, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    
-                else:
-                    if mostrar_nombre==False:
-                        bot.send_document(canal, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    else:                        
-                        bot.send_document(canal, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+        else: #Si no tiene texto, adjunto, lo mismo pero sin el texto
+            
+            if diccionario_publicaciones[message.chat.id][2]=="photo":
+                if mostrar_nombre==False:
+                    bot.send_photo(canal, photo=archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                else:                        
+                    bot.send_photo(canal, photo=archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 
-            else: #Si no tiene texto, adjunto, lo mismo pero sin el texto
+            
+            elif diccionario_publicaciones[message.chat.id][2]=="video":
+                if mostrar_nombre==False:
+                    bot.send_video(canal, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                else:                        
+                    bot.send_video(canal, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 
-                if message.content_type=="photo":
-                    if mostrar_nombre==False:
-                        bot.send_photo(canal, photo=archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    else:                        
-                        bot.send_photo(canal, photo=archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    
+            elif diccionario_publicaciones[message.chat.id][2]=="audio":
+                if mostrar_nombre==False:
+                    bot.send_audio(canal, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                else:                        
+                    bot.send_audio(canal, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 
-                elif message.content_type=="video":
-                    if mostrar_nombre==False:
-                        bot.send_video(canal, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    else:                        
-                        bot.send_video(canal, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    
-                elif message.content_type=="audio":
-                    if mostrar_nombre==False:
-                        bot.send_audio(canal, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    else:                        
-                        bot.send_audio(canal, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    
-                else:
-                    if mostrar_nombre==False:
-                        bot.send_document(canal, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
-                    else:                        
-                        bot.send_photo(canal, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+            else:
+                if mostrar_nombre==False:
+                    bot.send_document(canal, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                else:                        
+                    bot.send_photo(canal, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
         
 
 
             
-            
-    
+        
         #Luego de cerrado el archivo, borraré el documento
-        os.remove(nombre)
-        bot.send_message(message.chat.id, f"Mensaje enviado exitosamente :) Revisa el canal @{bot.get_chat(canal).username} para que veas la publicación\n\n¡Gracias por tu #aporte! :D")
+    os.remove(diccionario_publicaciones[message.chat.id][0])                
+    bot.send_message(message.chat.id, f"Mensaje enviado exitosamente :) Revisa el canal @{bot.get_chat(canal).username} para que veas la publicación\n\n¡Gracias por tu #aporte! :D")
     return
 
 
