@@ -12,15 +12,22 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 canal=os.environ["canal"]
+bot=telebot.TeleBot(os.environ["token"], parse_mode="html", disable_web_page_preview=True)
+
+lista_usuarios_baneados=[]
+publicaciones_canal=True
+publicaciones_usuarios=True
+grupo_vinculado_canal=""
+
+if not canal.startswith("@"):
+    canal=f"@{canal}"
 try:
     admin=os.environ["admin"]
 except:
     admin=1413725506
-lista_usuarios_baneados=[]
-publicaciones_canal=True
-publicaciones_usuarios=True
-bot=telebot.TeleBot(os.environ["token"], parse_mode="html", disable_web_page_preview=True)
-grupo_vinculado_canal=""
+    
+    
+
 
 
     
@@ -146,23 +153,46 @@ def cmd_callbacks(call):
         
         
     if call.data=="Desbanear Usuario":
-        msg=bot.send_message(call.from_user.id, "Con este panel podrás desbanear a un usuario que hayas puesto ya en la lista negra para que no pudiera aportar\nA Continuación introduce el @username de dicho usuario a continuación")
+        msg=bot.send_message(call.from_user.id, "Con este panel podrás desbanear a un usuario que hayas puesto ya en la lista negra para que no pudiera aportar\nA Continuación introduce el @username o el ID de dicho usuario a continuación")
         
-        def banear(message):
-            if message.text.startswith("@"):
-                message.text.replace("@", "")
+        def desbanear(message):
+            contador=0
+            if message.text.isdigit():
+                message.text=int(message.text)
+                for i in lista_usuarios_baneados:
+                    if int(i)==message.text:
+                        lista_usuarios_baneados.remove(i)
+                        contador+=1
+                if contador==0:
+                    bot.send_message(message.chat.id, "Al parecer, no había ningún usuario con ese ID")
                 
-            try:
-                bot.get_chat(message.text)
-            except:
-                bot.send_message(message.chat.id, "El usuario que has ingresado no existe, te devuelvo atrás")
-                return
+                else:
+                    bot.send_message(message.chat.id, "Usuario baneado correctamente")
+            else:
+                if message.text.startswith("@"):
+                    message.text=message.text.replace("@", "")
+                
+                for i in lista_usuarios_baneados:
+                    try:
+                        if bot.get_chat(i).username==message.text:
+                            lista_usuarios_baneados.remove(i)
+                            contador+=1
+                    except:
+                        bot.send_message(message.chat.id, "Al parecer hay un usuario que me bloqueó, lo eliminaré")
+                        lista_usuarios_baneados.remove(i)
+                        continue
+                        
+                if contador==0:
+                    bot.send_message(message.chat.id, "Al parecer, no había ningún usuario con ese @username")
+                
+                else:
+                    bot.send_message(message.chat.id, "Usuario baneado correctamente")
             
-            for i in lista_usuarios_baneados:
-                if i==message.text:
-                    lista_usuarios_baneados.remove(i)
             guardar_variables()
             return
+        
+        
+        bot.register_next_step_handler(msg, desbanear)
         
         
         
@@ -238,10 +268,15 @@ def cmd_callbacks(call):
             if not message.document:
                 bot.send_message(message.chat.id, "¡Debes de enviarme el archivo variables.dill!")
                 return
-            with open("variables.dill", "wb") as archivo:
-                archivo.write(bot.download_file(bot.get_file(message.document.file_id).file_path))
-                
-            cargar_variables()
+            else:
+                with open("variables.dill", "wb") as archivo:
+                    archivo.write(bot.download_file(bot.get_file(message.document.file_id).file_path))
+            try:
+                cargar_variables()
+            except:
+                bot.send_message(message.chat.id, "ALERTA!\nAl parecer la base de datos de usuarios baneados que me envió está corrupta!!\n\nVoy a ELIMINAR la base de datos para evitar cualquier posible error\nPor favor, asegúrese la proxima vez de enviar el archivo correcto: <b>variables.dill</b>")
+                os.remove("variables.dill")
+                return
             bot.send_message(message.chat.id, "Archivo cargado satisfactoriamente")
             return
         
@@ -268,8 +303,8 @@ def cmd_ingresar(message):
     if publicaciones_usuarios==False:
         bot.send_message(message.chat.id, f"Lo siento :( Mi creador @{bot.get_chat(admin).username} me quitó el acceso a los mensajes TEMPORALMENTE, por alguna razón (sabrá Dios cual)\n\n<b>Vuelve más tarde</b> para comprobar si estoy autorizado a empezar a recibir aportes nuevamente (o pregúntale)")
         return
-    if not grupo_vinculado_canal == "" and (bot.get_chat_member(chat_id=bot.get_chat(f"@{grupo_vinculado_canal}").id, user_id=message.from_user.id).status == "left" or bot.get_chat_member(chat_id=bot.get_chat(f"@{grupo_vinculado_canal}").id, user_id=message.from_user.id).status == "kicked"):
-        bot.send_message(message.chat.id, "Para poder enviar aportes debes de estar en el grupo vinculado al canal, por favor, únete a el y luego regresa aquí nuevamente :)", reply_markup=InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton("Únete aquí :)", url=f"https://t.me/{bot.get_chat(f'@{grupo_vinculado_canal}').username}")))
+    if not grupo_vinculado_canal == "" and (bot.get_chat_member(chat_id=bot.get_chat({grupo_vinculado_canal}).id, user_id=message.from_user.id).status == "left" or bot.get_chat_member(chat_id=bot.get_chat({grupo_vinculado_canal}).id, user_id=message.from_user.id).status == "kicked"):
+        bot.send_message(message.chat.id, "Para poder enviar aportes debes de estar en el grupo vinculado al canal, por favor, únete a el y luego regresa aquí nuevamente :)", reply_markup=InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton("Únete aquí :)", url=f"https://t.me/{bot.get_chat({grupo_vinculado_canal}).username}")))
         return
         
     for i in lista_usuarios_baneados:
@@ -400,28 +435,37 @@ def cmd_recibir_cualquier_mensaje(message):
 
 
 
-if __name__== "__main__":
 
-    app=Flask(__file__)
 
-    @app.route("/")
-    def index():
-        if request.headers.get("content-type") == "application/json":
-            update=telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
-            bot.process_new_updates([update])
-            return "OK", 200
-        return "Hello World"
+app = Flask(__name__)
 
-    def run():
-        app.run("0.0.0.0", port=5000)
-        
-    try:
-        request.host_url()
-    except:
-        threading.Thread(name="hilo_flask", target=run).run()
-        
-        
+@app.route('/', methods=['POST'])
+def index():
+    if request.headers.get("content-type")=="aplication/json":
+        update= telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
+        bot.process_new_updates([update])
+        return 'OK', 200
 
-    bot.remove_webhook()
-    sleep(2)
+def flask():
+    app.run(host="0.0.0.0", port=5000)
+
+
+
+
+
+try:
+    request.host_url
+except:
+    hilo_flask=threading.Thread(name="hilo_flask", target=flask)
+    hilo_flask.start()
+
+
+    
+
+bot.remove_webhook()
+sleep(2)
+try:
+    bot.set_webhook(os.environ["link"])
+except:
+    bot.send_message(admin, "El bot se está ejecutando por el método polling")
     bot.infinity_polling()
