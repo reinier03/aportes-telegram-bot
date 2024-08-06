@@ -22,11 +22,19 @@ publicaciones_usuarios=True
 bot=telebot.TeleBot(os.environ["token"], parse_mode="html", disable_web_page_preview=True)
 grupo_vinculado_canal=""
 
-if os.path.isfile("variables.dill"):
+
+    
+def cargar_variables():
     with open("variables.dill", "rb") as archive:
         lista=dill.load(archive)
         for key, value in lista.items():
             globals()[key]=value
+
+    return
+
+
+if os.path.isfile("variables.dill"):
+    cargar_variables()
 
 if publicaciones_usuarios==False:
     bot.send_message(admin, "<u><b>ADVERTENCIA</b></u>:\nLos aportes al canal por parte de los usuarios están desabilitados")
@@ -69,6 +77,8 @@ def cmd_panel(message):
     panel_administrador.add(InlineKeyboardButton("Desbanear a un usuario", callback_data="Desbanear Usuario"))
     panel_administrador.add(InlineKeyboardButton("Definir Grupo Adjunto", callback_data="Grupo Adjunto"))
     panel_administrador.add(InlineKeyboardButton("Ver lista de usuarios baneados", callback_data="Ver Lista"))
+    panel_administrador.add(InlineKeyboardButton("Enviar copia de seguridad", callback_data="Enviar Archivo"))
+    panel_administrador.add(InlineKeyboardButton("Recibir copia de seguridad", callback_data="Recibir Archivo"))
     bot.send_message(admin, "Qué pretendes hacer?", reply_markup=panel_administrador)
 
 
@@ -204,6 +214,41 @@ def cmd_callbacks(call):
             
         bot.send_message(call.from_user.id , texto)
         return
+    
+    
+    elif call.data == "Enviar Archivo":
+        if not os.path.isfile("variables.dill"):
+            bot.send_message(call.from_user.id, "Aún no se ha hecho el archivo")
+            return
+        
+        with open("variables.dill", "rb") as archivo:
+            bot.send_document(call.from_user.id, archivo)
+        
+        return
+    
+    
+    
+    
+    
+
+    elif call.data == "Recibir Archivo":
+        msg=bot.send_message(call.from_user.id, "A continuación, por favor envíeme el archivo")
+        
+        def recibir_archivo(message):
+            if not message.document:
+                bot.send_message(message.chat.id, "¡Debes de enviarme el archivo variables.dill!")
+                return
+            with open("variables.dill", "wb") as archivo:
+                archivo.write(bot.download_file(bot.get_file(message.document.file_id).file_path))
+                
+            cargar_variables()
+            bot.send_message(message.chat.id, "Archivo cargado satisfactoriamente")
+            return
+        
+        
+        bot.register_next_step_handler(msg, recibir_archivo)
+
+
 
 
 @bot.message_handler(commands=["start", "help"])
@@ -379,4 +424,4 @@ if __name__== "__main__":
 
     bot.remove_webhook()
     sleep(2)
-    bot.set_webhook(f"{os.environ['nombre_link']}")
+    bot.infinity_polling()
