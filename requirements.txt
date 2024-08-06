@@ -1,0 +1,4 @@
+pyTelegramBotAPI==4.22.0
+telebot==0.0.5
+Flask==3.0.0
+dill==0.3.7
