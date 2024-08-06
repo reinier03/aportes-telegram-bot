@@ -484,6 +484,15 @@ def cmd_recibir_mensajes_canal(message):
     return
 
 
+@bot.message_handler(commands=["host"])
+def cmd_host(message):
+    try:
+        bot.send_message(message.chat.id, request.host_url)
+    except:
+        bot.send_message(message.chat.id, "No pude :(")
+    
+
+
 @bot.message_handler(func=lambda x: True)
 def cmd_recibir_cualquier_mensaje(message):
     if not message.chat.type == "private":
@@ -495,16 +504,13 @@ def cmd_recibir_cualquier_mensaje(message):
 
 
 try:
-    request.host_url
+    print(f"La dirección del servidor es:{request.host_url}")
 except:
     app = Flask(__name__)
 
-    @app.route('/', methods=['POST'])
+    @app.route('/')
     def index():
-        if request.headers.get("content-type")=="aplication/json":
-            update= telebot.types.Update.de_json(request.stream.read().decode("utf-8"))
-            bot.process_new_updates([update])
-            return 'OK', 200
+        return "Hello World"
 
     def flask():
         app.run(host="0.0.0.0", port=5000)
@@ -514,7 +520,7 @@ except:
 
 
 try:
-    request.host_url
+    print(f"La dirección del servidor es:{request.host_url}")
 except:
     hilo_flask=threading.Thread(name="hilo_flask", target=flask)
     hilo_flask.start()
