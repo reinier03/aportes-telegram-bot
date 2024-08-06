@@ -14,7 +14,7 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 # canal=os.environ["canal"]
-canal="@reimaprueba"
+canal=os.environ["canal"]
 bot=telebot.TeleBot(os.environ["token"], parse_mode="html", disable_web_page_preview=True)
 
 diccionario_publicaciones={}
