@@ -19,20 +19,41 @@ canal=os.environ["canal"]
 bot=telebot.TeleBot(os.environ["token"], parse_mode="html", disable_web_page_preview=True)
 diccionario_publicaciones={}
 lista_usuarios_baneados=[]
-publicaciones_canal=False
+publicaciones_canal=True
 publicaciones_usuarios=True
+admin=os.environ["admin"]
+
 try:
     grupo_vinculado_canal=os.environ["grupo"]
 except:
     grupo_vinculado_canal=False
     
-admin=os.environ["admin"]
+if not canal.isdigit() and not canal.startswith("-"):
+    if not canal.startswith("@"):
+        canal=f"@{canal}"
+        canal=bot.get_chat(canal).id
+    else:
+        canal=bot.get_chat(canal).id
+        
+elif canal.startswith("-"):
+    canal=int(canal)
+    
+if grupo_vinculado_canal:
+    if not grupo_vinculado_canal.isdigit() and not grupo_vinculado_canal.startswith("-"):
+        if not grupo_vinculado_canal.startswith("@"):
+            grupo_vinculado_canal=f"@{grupo_vinculado_canal}"
+            grupo_vinculado_canal=bot.get_chat(grupo_vinculado_canal).id
+        else:
+            grupo_vinculado_canal=bot.get_chat(grupo_vinculado_canal).id
+            
+    elif grupo_vinculado_canal.startswith("-"):
+        grupo_vinculado_canal=int(grupo_vinculado_canal)
+    
 
-if isinstance(canal, int):
-    canal=bot.get_chat(canal).id
+    
 
-elif not canal.startswith("@"):
-    canal=f"@{canal}"
+
+
 
     
     
@@ -95,6 +116,7 @@ def cmd_panel(message):
     panel_administrador.add(InlineKeyboardButton("Enviar copia de seguridad 🎁", callback_data="Enviar Archivo"))
     panel_administrador.add(InlineKeyboardButton("Recibir copia de seguridad ✒", callback_data="Recibir Archivo"))
     panel_administrador.add(InlineKeyboardButton("Ver username de usuario por ID 👀", callback_data="ver usuario"))
+    panel_administrador.add(InlineKeyboardButton("Ver variables del script 👀🗒", callback_data="script"))
     bot.send_message(admin, "Qué pretendes hacer?", reply_markup=panel_administrador)
 
 

@@ -26,15 +26,16 @@ def guardar_variables(lista_usuarios_baneados, publicaciones_usuarios , publicac
 
 
 def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, publicaciones_canal, canal, grupo_vinculado_canal):
-        
+
     if call.data == "Parar canal":
+
         if publicaciones_canal==False:
             publicaciones_canal=True
-            bot.send_message(call.from_user.id, "He vuelto a Monitoriar las publicaciones del canal :D \n\nCuando quieras nuevamente que deje de administrarlas vuelve a presionar el mismo botón que presionaste para desactivarlas")
+            bot.send_message(call.from_user.id, f"He vuelto a Monitoriar las publicaciones del canal/grupo <a href='{bot.get_chat(canal).invite_link}'>{bot.get_chat(canal).title}</a> :D \n\nCuando quieras nuevamente que deje de administrarlas vuelve a presionar el mismo botón que presionaste para desactivarlas")
             
         elif publicaciones_canal==True:
             publicaciones_canal=False
-            bot.send_message(call.from_user.id, "He dejado de Monitoriar las publicaciones del canal :( \n\nCuando quieras nuevamente que las administre vuelve a presionar el mismo botón que presionaste para desactivarlas")
+            bot.send_message(call.from_user.id, "He dejado de Monitoriar las publicaciones del canal/grupo <a href='{bot.get_chat(canal).invite_link}'>{bot.get_chat(canal).title}</a> :( \n\nCuando quieras nuevamente que las administre vuelve a presionar el mismo botón que presionaste para desactivarlas")
             
         guardar_variables(lista_usuarios_baneados, publicaciones_usuarios , publicaciones_canal, grupo_vinculado_canal)
         return
@@ -297,9 +298,16 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
                 except Exception as e:
                     bot.send_message(message.chat.id, f"Ha ocurrido la siguiente excepción:\n{e}")
 
-                return
+            
         
         bot.register_next_step_handler(msg, ver_usuario_username)
+    elif call.data=="script":
+        if grupo_vinculado_canal:
+            bot.send_message(call.from_user.id, f"\n<a href='{bot.get_chat(grupo_vinculado_canal).invite_link}'>Grupo Vinculado</a>: <code>{grupo_vinculado_canal}</code>\n<a href='{bot.get_chat(canal).invite_link}'>Canal</a>: <code>{canal}</code>\nSe monitorea el canal: {publicaciones_canal}\nSe recibe aportes: {publicaciones_usuarios}")
+        else:
+            bot.send_message(call.from_user.id, f"Grupo Vinculado': <code>{grupo_vinculado_canal}</code>\n<a href='{bot.get_chat(canal).invite_link}'>Canal</a>: <code>{canal}</code>\nSe monitorea el canal: {publicaciones_canal}\nSe recibe aportes: {publicaciones_usuarios}")
         
         
     bot.answer_callback_query(call.id)
+    guardar_variables(lista_usuarios_baneados, publicaciones_usuarios, publicaciones_canal, grupo_vinculado_canal)
+    return
