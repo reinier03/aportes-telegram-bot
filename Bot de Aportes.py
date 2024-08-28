@@ -9,29 +9,33 @@ import threading
 from random import randint
 from time import sleep
 import dill
+import callback_querys
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
-# canal=os.environ["canal"]
+
 canal=os.environ["canal"]
 bot=telebot.TeleBot(os.environ["token"], parse_mode="html", disable_web_page_preview=True)
-
 diccionario_publicaciones={}
 lista_usuarios_baneados=[]
-publicaciones_canal=True
+publicaciones_canal=False
 publicaciones_usuarios=True
-grupo_vinculado_canal=""
+try:
+    grupo_vinculado_canal=os.environ["grupo"]
+except:
+    grupo_vinculado_canal=False
+    
 admin=os.environ["admin"]
 
-if not canal.startswith("@"):
+if isinstance(canal, int):
+    canal=bot.get_chat(canal).id
+
+elif not canal.startswith("@"):
     canal=f"@{canal}"
 
     
-
     
-    
-
 
 
     
@@ -84,208 +88,27 @@ def cmd_panel(message):
     panel_administrador=InlineKeyboardMarkup(row_width=1)
     panel_administrador.add(InlineKeyboardButton("Dejar de/Volver a Recibir mensajes del Canal", callback_data="Parar canal"))
     panel_administrador.add(InlineKeyboardButton("Dejar de/Volver a Recibir mensajes de Usuarios", callback_data="Parar Usuarios"))
-    panel_administrador.add(InlineKeyboardButton("Banear a un usuario", callback_data="Banear Usuario"))
-    panel_administrador.add(InlineKeyboardButton("Desbanear a un usuario", callback_data="Desbanear Usuario"))
-    panel_administrador.add(InlineKeyboardButton("Definir Grupo Adjunto", callback_data="Grupo Adjunto"))
-    panel_administrador.add(InlineKeyboardButton("Ver lista de usuarios baneados", callback_data="Ver Lista"))
-    panel_administrador.add(InlineKeyboardButton("Enviar copia de seguridad", callback_data="Enviar Archivo"))
-    panel_administrador.add(InlineKeyboardButton("Recibir copia de seguridad", callback_data="Recibir Archivo"))
+    panel_administrador.add(InlineKeyboardButton("Banear a un usuario 🙍‍♂️❌", callback_data="Banear Usuario"))
+    panel_administrador.add(InlineKeyboardButton("Desbanear a un usuario 🙍‍♂️➕", callback_data="Desbanear Usuario"))
+    panel_administrador.add(InlineKeyboardButton("Definir Grupo Adjunto 👥", callback_data="Grupo Adjunto"))
+    panel_administrador.add(InlineKeyboardButton("Ver lista de usuarios baneados 👀📋", callback_data="Ver Lista"))
+    panel_administrador.add(InlineKeyboardButton("Enviar copia de seguridad 🎁", callback_data="Enviar Archivo"))
+    panel_administrador.add(InlineKeyboardButton("Recibir copia de seguridad ✒", callback_data="Recibir Archivo"))
+    panel_administrador.add(InlineKeyboardButton("Ver username de usuario por ID 👀", callback_data="ver usuario"))
     bot.send_message(admin, "Qué pretendes hacer?", reply_markup=panel_administrador)
 
 
 
 
+
 @bot.callback_query_handler(func=lambda x: True)
-def cmd_callbacks(call):
-    global publicaciones_canal
+def cmd_process_callback(call):
+    global lista_usuarios_baneados
     global publicaciones_usuarios
-        
-    if call.data == "Parar canal":
-        if publicaciones_canal==False:
-            publicaciones_canal=True
-            bot.send_message(call.from_user.id, "He vuelto a Monitoriar las publicaciones del canal :D \n\nCuando quieras nuevamente que deje de administrarlas vuelve a presionar el mismo botón que presionaste para desactivarlas")
-            
-        elif publicaciones_canal==True:
-            publicaciones_canal=False
-            bot.send_message(call.from_user.id, "He dejado de Monitoriar las publicaciones del canal :( \n\nCuando quieras nuevamente que las administre vuelve a presionar el mismo botón que presionaste para desactivarlas")
-            
-        guardar_variables()
-        return
-    
-    
-    
-    
-    
-    
-    if call.data == "Parar Usuarios":
-        if publicaciones_usuarios==False:
-            publicaciones_usuarios=True
-            bot.send_message(call.from_user.id, "He vuelto a empezar a recibir los aportes de los usuarios :D \n\nCuando quieras nuevamente que los deje de recibir vuelve a presionar el mismo botón que presionaste para activarlos")
-        elif publicaciones_usuarios==True:
-            publicaciones_usuarios=False
-            bot.send_message(call.from_user.id, "He dejado de recibir los aportes de los usuarios :( \n\nCuando quieras nuevamente que los reciba vuelve a presionar el mismo botón que presionaste para desactivarlos")
-        
-        guardar_variables()
-        return
-
-
-
-
-
-    if call.data == "Banear Usuario":
-        msg=bot.send_message(call.from_user.id, "Con este panel podrás banear a un usuario para que no pueda hacer más aportes al canal\nA Continuación introduce el EL ID de dicho usuario a continuación")
-        
-        def banear(message):
-            
-            try:
-                bot.get_chat(int(message.text)).id
-            except:
-                bot.send_message(message.chat.id, "El usuario que has ingresado no existe, te devuelvo atrás")
-                return
-                
-            lista_usuarios_baneados.append(bot.get_chat(message.text).id)
-            guardar_variables()
-            bot.send_message(message.chat.id, "Usuario baneado exitosamente")
-            return
-            
-            
-        bot.register_next_step_handler(msg, banear)
-        
-        
-        
-        
-        
-        
-    if call.data=="Desbanear Usuario":
-        msg=bot.send_message(call.from_user.id, "Con este panel podrás desbanear a un usuario que hayas puesto ya en la lista negra para que no pudiera aportar\nA Continuación introduce el @username o el ID de dicho usuario a continuación")
-        
-        def desbanear(message):
-            contador=0
-            if message.text.isdigit():
-                message.text=int(message.text)
-                for i in lista_usuarios_baneados:
-                    if int(i)==message.text:
-                        lista_usuarios_baneados.remove(i)
-                        contador+=1
-                if contador==0:
-                    bot.send_message(message.chat.id, "Al parecer, no había ningún usuario con ese ID")
-                
-                else:
-                    bot.send_message(message.chat.id, "Usuario baneado correctamente")
-            else:
-                if message.text.startswith("@"):
-                    message.text=message.text.replace("@", "")
-                
-                for i in lista_usuarios_baneados:
-                    try:
-                        if bot.get_chat(i).username==message.text:
-                            lista_usuarios_baneados.remove(i)
-                            contador+=1
-                    except:
-                        bot.send_message(message.chat.id, "Al parecer hay un usuario que me bloqueó, lo eliminaré")
-                        lista_usuarios_baneados.remove(i)
-                        continue
-                        
-                if contador==0:
-                    bot.send_message(message.chat.id, "Al parecer, no había ningún usuario con ese @username")
-                
-                else:
-                    bot.send_message(message.chat.id, "Usuario baneado correctamente")
-            
-            guardar_variables()
-            return
-        
-        
-        bot.register_next_step_handler(msg, desbanear)
-        
-        
-        
-        
-        
-        
-    if call.data=="Grupo Adjunto":
-        if  not grupo_vinculado_canal == "":
-            bot.send_message(call.from_user.id, f"Actualmente el grupo vinculado es @{bot.get_chat(grupo_vinculado).username}")
-            
-        msg=bot.send_message(call.from_user.id, "Define a continuación el @username del grupo vinculado al canal \n\nNota:\nEsto les da la condición a los usuarios de unirse a un grupo para poder aportar al canal principal. Si no quieres establecer esta condición para aportar, escribe un @username incorrecto a propósito\n\n")
-        
-        def grupo_vinculado(message):
-            global grupo_vinculado_canal
-
-            if not message.text.startswith("@"):
-                message.text="@" + message.text
-            try:
-                grupo_vinculado_canal=bot.get_chat(message.text).username
-                
-            except:
-                bot.send_message(message.chat.id, "Al parecer, te has confundido de dirección, ese grupo no existe\n\n<b>Eliminaré la condición de unirse a un grupo para publicar</b>")
-                grupo_vinculado_canal=""
-                guardar_variables()
-                return
-            
-            guardar_variables()
-            bot.send_message(message.chat.id, "Grupo definido exitosamente ;)")
-            return
-        
-        bot.register_next_step_handler(msg, grupo_vinculado)
-        
-        
-        
-        
-        
-        
-    elif call.data=="Ver Lista":
-        texto=""
-        if len(lista_usuarios_baneados)==0:
-            bot.send_message(call.from_user.id, "La lista está vacía tigre")
-            return
-        
-        for i in lista_usuarios_baneados:
-            try:
-                texto+=f"Usuario: @{bot.get_chat(i).username},  ID del Usuario: <code>{bot.get_chat(i).id}</code>\n"
-            except:
-                texto+=f"ESTE USUARIO ME BLOQUEÓ! > {i}\n"
-            
-        bot.send_message(call.from_user.id , texto)
-        return
-    
-    
-    elif call.data == "Enviar Archivo":
-        if not os.path.isfile("variables.dill"):
-            bot.send_message(call.from_user.id, "Aún no se ha hecho el archivo")
-            return
-        
-        with open("variables.dill", "rb") as archivo:
-            bot.send_document(call.from_user.id, archivo)
-        
-        return
-    
-    
-    
-    
-    
-
-    elif call.data == "Recibir Archivo":
-        msg=bot.send_message(call.from_user.id, "A continuación, por favor envíeme el archivo")
-        
-        def recibir_archivo(message):
-            if not message.document:
-                bot.send_message(message.chat.id, "¡Debes de enviarme el archivo variables.dill!")
-                return
-            else:
-                with open("variables.dill", "wb") as archivo:
-                    archivo.write(bot.download_file(bot.get_file(message.document.file_id).file_path))
-            try:
-                cargar_variables()
-            except:
-                bot.send_message(message.chat.id, "ALERTA!\nAl parecer la base de datos de usuarios baneados que me envió está corrupta!!\n\nVoy a ELIMINAR la base de datos para evitar cualquier posible error\nPor favor, asegúrese la proxima vez de enviar el archivo correcto: <b>variables.dill</b>")
-                os.remove("variables.dill")
-                return
-            bot.send_message(message.chat.id, "Archivo cargado satisfactoriamente")
-            return
-        
-        
-        bot.register_next_step_handler(msg, recibir_archivo)
+    global publicaciones_canal
+    global canal
+    global grupo_vinculado_canal
+    return callback_querys.recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, publicaciones_canal, canal, grupo_vinculado_canal)
 
 
 
@@ -294,7 +117,13 @@ def cmd_callbacks(call):
 def cmd_start(message):
     if not message.chat.type == "private":
         return
-    bot.send_message(message.chat.id, f"<b>Bienvenido al Bot de Aportes de @{bot.get_chat(canal).username}</b> 😁\n\nLa idea con este bot es que los usuarios TAMBIÉN aporten contenido al canal además de los propios admins\n\n<u>Contenido Aceptado por el Bot</u>:\n<b>Imágenes</b>\n<b>Vídeos</b>\n<b>Música</b>\n<b>Documentos</b> (PDF, EPUB, etcétera)\n <b>Encuestas</b> que envíe El Usuario\n-Más allá de esos archivos, no serán aceptado a no ser que a futuro @{bot.get_chat(admin).username} lo decida-\n\nNota Importante:\nEl límite de peso de los documentos es de 50 MB mientras que para los vídeos, fotos y archivos de audio son de 20 MB, no sobrepases el límite con el peso de tus archivos o no se enviará lo que quieres compartir\n\n¿Qué esperas? Empieza llevando tu contenido a nuestro canal escribiendo /enviar :)")
+    if message.from_user.language_code=="es":
+        bot.send_message(message.chat.id, f"<b>Bienvenido al Bot de Aportes de @{bot.get_chat(canal).username}</b> 😁\n\nLa idea con este bot es que los usuarios TAMBIÉN aporten contenido al canal además de los propios admins\n\n<u>Contenido Aceptado por el Bot</u>:\n<b>Imágenes</b>\n<b>Vídeos</b>\n<b>Música</b>\n<b>Documentos</b> (PDF, EPUB, etcétera)\n <b>Encuestas</b> que envíe El Usuario\n-Más allá de esos archivos, no serán aceptado a no ser que a futuro @{bot.get_chat(admin).username} lo decida-\n\nNota Importante:\nEl límite de peso de los documentos es de 50 MB mientras que para los vídeos, fotos y archivos de audio son de 20 MB, no sobrepases el límite con el peso de tus archivos o no se enviará lo que quieres compartir\n\n¿Qué esperas? Empieza llevando tu contenido a nuestro canal escribiendo /enviar :)")
+        bot.send_message(message.chat.id, "Este bot está desarrollado por @mistakedelalaif\nSi quieres un bot igual o parecido contáctalo y te lo hará:)")
+        
+    else:
+        bot.send_message(message.chat.id, f"Welcome to the Contribution Bot of @{bot.get_chat(canal).username} 😁\n\nThe idea with this bot is that users ALSO contribute content to the channel in addition to the admins themselves\n\n<u>Content Accepted by the Bot</u>:\nImages\nVideos\nMusic\nDocuments (PDF, EPUB, etc.)\nSurveys sent by the User\n-Beyond those files, they will not be accepted unless in the future @{bot.get_chat(admin ).username} decide-\n\nImportant Note:\nThe weight limit for documents is 50 MB while for videos, photos and audio files they are 20 MB, do not exceed the limit with the weight of your files or what you want to share will not be sent\n\nWhat are you waiting for?  Start by bringing your content to our channel by typing /enviar :)")
+        bot.send_message(message.chat.id, "This bot is developed by @mistakedelalaif\nIf you want the same or similar bot, contact him and he will make it for you:)")
     return
     
     
@@ -306,10 +135,12 @@ def cmd_ingresar(message):
         return
         
     if publicaciones_usuarios==False:
-        bot.send_message(message.chat.id, f"Lo siento :( Mi creador @{bot.get_chat(admin).username} me quitó el acceso a los mensajes TEMPORALMENTE, por alguna razón (sabrá Dios cual)\n\n<b>Vuelve más tarde</b> para comprobar si estoy autorizado a empezar a recibir aportes nuevamente (o pregúntale)")
-        return
-    if not grupo_vinculado_canal == "" and (bot.get_chat_member(chat_id=bot.get_chat({grupo_vinculado_canal}).id, user_id=message.from_user.id).status == "left" or bot.get_chat_member(chat_id=bot.get_chat({grupo_vinculado_canal}).id, user_id=message.from_user.id).status == "kicked"):
-        bot.send_message(message.chat.id, "Para poder enviar aportes debes de estar en el grupo vinculado al canal, por favor, únete a el y luego regresa aquí nuevamente :)", reply_markup=InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton("Únete aquí :)", url=f"https://t.me/{bot.get_chat({grupo_vinculado_canal}).username}")))
+        if message.from_user.language_code=="es":
+            bot.send_message(message.chat.id, f"Lo siento :( Mi creador @{bot.get_chat(admin).username} me quitó el acceso a los mensajes TEMPORALMENTE, por alguna razón (sabrá Dios cual)\n\n<b>Vuelve más tarde</b> para comprobar si estoy autorizado a empezar a recibir aportes nuevamente (o pregúntale)")
+            
+        else:
+            bot.send_message(message.chat.id, f"Sorry :( My creator @{bot.get_chat(admin).username} removed my access to messages TEMPORARILY, for some reason (only God knows why)\n\nPlease come back later to check If I am authorized to start receiving contributions again (or ask)")
+            
         return
         
     for i in lista_usuarios_baneados:
@@ -346,52 +177,58 @@ def hacer_aporte(message):
 def recibir_publicacion(message, mostrar_nombre):
     global diccionario_publicaciones
     if message.content_type=="text":
-        bot.send_message(message.chat.id, "No está permitido que sea <b>Solamente texto</b>....\nEnvía una foto, un vídeo o una canción que quieras compartir con los demás :) \n\nEscribe nuevamente /ingresar para intentarlo nuevamente")
+        bot.send_message(message.chat.id, "No está permitido que sea <b>Solamente texto</b>....\nEnvía una foto, un vídeo o una canción que quieras compartir con los demás :) \n\nEscribe nuevamente /enviar para intentarlo nuevamente")
         return
 
 
     diccionario_publicaciones[message.chat.id]=[]
     #El elemento 0 de diccionario_publicaciones[message.chat.id] será el nombre del archivo y el 1 será el enlace y el 2 será el tipo de archivo
         
-    if message.content_type=="photo":   
-        diccionario_publicaciones[message.chat.id].append(f"{randint(1,100)}_{os.path.basename(bot.get_file(message.photo[-1].file_id).file_path)}")
-        diccionario_publicaciones[message.chat.id].append(bot.get_file(message.photo[-1].file_id).file_path)
-        diccionario_publicaciones[message.chat.id].append("photo")
-    
-    elif message.content_type=="audio":
-        try:
-            diccionario_publicaciones[message.chat.id].append(f"{message.audio.performer} - {message.audio.title}")
-        except:
-            contador=0
-            for i in message.audio.file_name:
-                if not i.isdigit():
-                    break
-                else:
-                    contador+=1
-                
-            diccionario_publicaciones[message.chat.id].append(f"{message.audio.file_name[contador:]}")
-            
-        diccionario_publicaciones[message.chat.id].append(bot.get_file(message.audio.file_id).file_path)
-        diccionario_publicaciones[message.chat.id].append("audio")
-    
-    elif message.content_type=="video":
-        diccionario_publicaciones[message.chat.id].append(f"{randint(1,100)}_{os.path.basename(bot.get_file(message.video.file_id).file_path)}")
-        diccionario_publicaciones[message.chat.id].append(bot.get_file(message.video.file_id).file_path)
-        diccionario_publicaciones[message.chat.id].append("video")
-    
-    
-    elif message.content_type=="document":
-        diccionario_publicaciones[message.chat.id].append(f"{randint(1,100)}_{os.path.basename(bot.get_file(message.document.file_id).file_path)}")
-        diccionario_publicaciones[message.chat.id].append(bot.get_file(message.document.file_id).file_path)
-        diccionario_publicaciones[message.chat.id].append("document")
+    try:
+        if message.content_type=="photo":   
+            diccionario_publicaciones[message.chat.id].append(f"{randint(1,100)}_{os.path.basename(bot.get_file(message.photo[-1].file_id).file_path)}")
+            diccionario_publicaciones[message.chat.id].append(bot.get_file(message.photo[-1].file_id).file_path)
+            diccionario_publicaciones[message.chat.id].append("photo")
         
-    elif message.content_type=="poll":
-        bot.forward_message(canal, message.chat.id , message.message_id)
-        bot.send_message(message.chat.id, "Encuesta enviada exitosamente :) revisa el canal para que veas la publicación\n\n¡Gracias por tu #aporte! :D")
-        return
-    
-    else:
-        bot.send_message(message.chat.id, "Al parecer, el contenido que planeas enviar no está entre los que acepto, por favor, consulta nuevamente la ayuda ingresando /help para más información :)")
+        elif message.content_type=="audio":
+            try:
+                extension=os.path.basename(bot.get_file(message.audio.file_id).file_path).split(".")[-1]
+                diccionario_publicaciones[message.chat.id].append(f"{message.audio.performer} - {message.audio.title}.{extension}")
+            except:
+                contador=0
+                for i in message.audio.file_name:
+                    if not i.isdigit():
+                        break
+                    else:
+                        contador+=1
+                    
+                diccionario_publicaciones[message.chat.id].append(f"{message.audio.file_name[contador:]}")
+                
+            diccionario_publicaciones[message.chat.id].append(bot.get_file(message.audio.file_id).file_path)
+            diccionario_publicaciones[message.chat.id].append("audio")
+        
+        elif message.content_type=="video":
+            diccionario_publicaciones[message.chat.id].append(f"{randint(1,100)}_{os.path.basename(bot.get_file(message.video.file_id).file_path)}")
+            diccionario_publicaciones[message.chat.id].append(bot.get_file(message.video.file_id).file_path)
+            diccionario_publicaciones[message.chat.id].append("video")
+        
+        
+        elif message.content_type=="document":
+            diccionario_publicaciones[message.chat.id].append(f"{randint(1,100)}_{os.path.basename(bot.get_file(message.document.file_id).file_path)}")
+            diccionario_publicaciones[message.chat.id].append(bot.get_file(message.document.file_id).file_path)
+            diccionario_publicaciones[message.chat.id].append("document")
+            
+        elif message.content_type=="poll":
+            bot.forward_message(canal, message.chat.id , message.message_id)
+            bot.send_message(message.chat.id, "Encuesta enviada exitosamente :) revisa el canal para que veas la publicación\n\n¡Gracias por tu #aporte! :D")
+            return
+        
+        else:
+            bot.send_message(message.chat.id, "Al parecer, el contenido que planeas enviar no está entre los que acepto, por favor, consulta nuevamente la ayuda ingresando /help para más información :)")
+            return
+        
+    except Exception as e:
+        bot.send_message(message.chat.id, f"<b>Ha ocurrido un error🙈</b>\nMUY posiblemente ese error haya sido debido a que el archivo que has enviado sea muy grande\n\nEl límite de peso de los documentos es de 50 MB mientras que para los vídeos, fotos y archivos de audio son de 20 MB, no sobrepases el límite con el peso de tus archivos\n\n<u>Descripción del error</u>:\n{e}\n\nElige otro archivo más pequeño y escríbeme /enviar nuevamente :(")
         return
 
 
@@ -493,11 +330,60 @@ def cmd_host(message):
     
 
 
+@bot.message_handler(content_types="new_chat_members", func=lambda message: message.chat.id==grupo_vinculado_canal)
+def cmd_control_group(message):
+    for member in message.new_chat_members:
+        if not bot.get_chat_member(canal , member.id).status in ("member, administrator, creator"):
+            if bot.get_chat(canal).username:
+                enlace=f"https://t.me/{bot.get_chat(canal).username}"
+            else:
+                enlace=bot.get_chat(canal).invite_link
+                
+            if member.language_code=="es":
+                markup=InlineKeyboardMarkup(row_width=1)
+                markup.add(InlineKeyboardButton(text="Únete al canal aquí 🎯", url=enlace))
+                markup.add(InlineKeyboardButton(text="Comprobar ✨", callback_data="Comprobar"))
+                
+                if member.username:
+                    bot.send_message(message.chat.id, f"Lo siento @{member.username} al parecer no eres miembro del canal @{bot.get_chat(canal).username}.\n\nÚnete al canal y vuelve a intentar unirte aquí presionando en '<b>Comprobar ✨</b>' :)", reply_markup=markup)
+                    bot.restrict_chat_member(message.chat.id, member.id, can_send_messages=False)
+                
+                else:
+                    bot.send_message(message.chat.id, f"Lo siento @{member.first_name} al parecer no eres miembro del canal @{bot.get_chat(canal).username}.\n\nÚnete al canal y vuelve a intentar unirte aquí presionando en '<b>Comprobar ✨</b>' :)", reply_markup=markup)
+                    bot.restrict_chat_member(message.chat.id, member.id, can_send_messages=False)
+            
+            else:
+                markup=InlineKeyboardMarkup(row_width=1)
+                markup.add(InlineKeyboardButton(text="Join to channel here 🎯", url=enlace))
+                markup.add(InlineKeyboardButton(text="Check ✨", callback_data="Comprobar"))
+                
+                if member.username:
+                    bot.send_message(message.chat.id, f"Sorry @{member.username} looks like you are not member of <a href='{bot.get_chat(canal).invite_link}'>{bot.get_chat(canal).title}</a>.\n\nJoin yourself here and come back again to join to this group pressing '<b>Check ✨</b>' :)", reply_markup=markup)
+                    bot.restrict_chat_member(message.chat.id, member.id, can_send_messages=False)
+                    
+                else:
+                    bot.send_message(message.chat.id, f"Sorry @{member.first_name} looks like you are not member of <a href='{bot.get_chat(canal).invite_link}'>{bot.get_chat(canal).title}</a>.\n\nJoin yourself here and come back again to join to this group pressing '<b>Check ✨</b>' :)", reply_markup=markup)
+                    bot.restrict_chat_member(message.chat.id, member.id, can_send_messages=False)
+        
+        else:
+            if message.from_user.language_code=="es":
+                bot.send_message(message.chat.id, f"Bienvenido/a {bot.get_chat(member.id).first_name} que te trae por aquí :)")
+
+            else:
+                bot.send_message(message.chat.id, f"Welcome {bot.get_chat(member.id).first_name} tell us something about you :)")
+            
+    return
+
+
+
 @bot.message_handler(func=lambda x: True)
 def cmd_recibir_cualquier_mensaje(message):
     if not message.chat.type == "private":
         return
-    bot.send_message(message.chat.id, "Oye Mastodonte, tienes que enviarme algún comando para yo poder hacer algo 🤨\n\nEnvíame /help para empezar :)")
+    if message.from_user.language_code == "es":
+        bot.send_message(message.chat.id, "Oye Mastodonte, tienes que enviarme algún comando para yo poder hacer algo 🤨\n\nEnvíame /help para empezar :)")
+    else:
+        bot.send_message(message.chat.id, "Hey Bulldog, you must send me some command for do something 🤨\n\Send to me /help to start :)")
 
 
 
@@ -527,11 +413,11 @@ except:
 
 
     
-
-bot.remove_webhook()
-sleep(2)
 try:
-    bot.set_webhook(os.environ["link"])
+    bot.remove_webhook()
 except:
-    bot.send_message(admin, "El bot se está ejecutando por el método polling")
-    bot.infinity_polling()
+    pass
+
+sleep(2)
+
+bot.infinity_polling()
