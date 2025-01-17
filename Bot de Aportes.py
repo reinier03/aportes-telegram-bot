@@ -11,6 +11,7 @@ from time import sleep
 import dill
 import callback_querys
 
+
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -400,12 +401,21 @@ def cmd_control_group(message):
 
 @bot.message_handler(func=lambda x: True)
 def cmd_recibir_cualquier_mensaje(message):
-    if not message.chat.type == "private":
+
+    if message.chat.id==grupo_vinculado_canal and message.text in ["https", "http" ,".com", ".net", ".org"]:
+        try:
+            bot.delete_message(message.chat.id, message.message_id)
+            bot.send_message(message.from_user.id, f"<u>ES:</u>\nNo puedes enviar spam a <a href='{bot.get_chat(grupo_vinculado_canal).invite_link}'>{bot.get_chat(grupo_vinculado_canal).title}</a>!\n\n<u>EN:</u>\nYou can't send spam to <a href='{bot.get_chat(grupo_vinculado_canal).invite_link}'>{bot.get_chat(grupo_vinculado_canal).title}</a>!")
+            
+        except:
+            pass
+    
+    elif not message.chat.type == "private":
         return
     if message.from_user.language_code == "es":
         bot.send_message(message.chat.id, "Oye Mastodonte, tienes que enviarme algún comando para yo poder hacer algo 🤨\n\nEnvíame /help para empezar :)")
     else:
-        bot.send_message(message.chat.id, "Hey Bulldog, you must send me some command for do something 🤨\n\Send to me /help to start :)")
+        bot.send_message(message.chat.id, "Hey Bulldog, you must send me some command for do something 🤨\n\nSend to me /help to start :)")
 
 
 
