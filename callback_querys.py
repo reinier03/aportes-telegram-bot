@@ -143,7 +143,7 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
         elif bot.get_chat_member(bot.get_chat(canal).id, call.from_user.id).status in ("member, administrator, creator") and  bot.get_chat_member(bot.get_chat(grupo_vinculado_canal).id, call.from_user.id).status=="restricted":
             
 
-            bot.unban_chat_member(call.message.chat.id, call.from_user.id)
+            bot.restrict_chat_member(call.message.chat.id, call.from_user.id, None, True, True , True, True , True, False , True , False , until_date=time.localtime(time.time() + 10))
             if call.from_user.language_code=="es":
                 if bot.get_chat(call.from_user.id).username:
                     bot.send_message(bot.get_chat(grupo_vinculado_canal).id, f"Bienvenido/a @{bot.get_chat(call.from_user.id).username}, cuéntanos de tí :)")
