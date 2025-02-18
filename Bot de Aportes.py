@@ -3,13 +3,16 @@ from telebot.types import InlineKeyboardButton
 from telebot.types import InlineKeyboardMarkup
 from telebot.types import ReplyKeyboardMarkup
 from telebot.types import ReplyKeyboardRemove
+import zipfile
 from flask import Flask, request
+import json
 import os
 import threading
 from random import randint
 from time import sleep
 import dill
 import callback_querys
+
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
@@ -331,6 +334,7 @@ def recibir_publicacion(message, mostrar_nombre):
 
 @bot.channel_post_handler(func=lambda message: int(message.chat.id) == bot.get_chat(canal).id and publicaciones_canal==True, content_types=["photo", "video", "document", "audio"])
 def cmd_recibir_mensajes_canal(message):
+    print("Entró por el caption del canal")
     if not (message.content_type=="video" or message.content_type=="photo" or message.content_type=="audio" or message.content_type=="document"):
         return
     try:
@@ -355,6 +359,7 @@ def cmd_host(message):
 
 @bot.message_handler(content_types="new_chat_members", func=lambda message: message.chat.id==grupo_vinculado_canal)
 def cmd_control_group(message):
+    print("Entró por el caption de los nuevos miembros del grupo")
     for member in message.new_chat_members:
         if not bot.get_chat_member(canal , member.id).status in ("member, administrator, creator"):
             if bot.get_chat(canal).username:
@@ -399,8 +404,12 @@ def cmd_control_group(message):
 
 
 
-@bot.message_handler(func=lambda x: True)
+@bot.message_handler(func=lambda x: True, )
+@bot.message_handler(content_types=['audio','video', 'document'])
 def cmd_recibir_cualquier_mensaje(message):
+    print("Entró por el caption de todos los mensajes restantes")
+    
+
 
     if message.chat.id==grupo_vinculado_canal and message.text in ["https", "http" ,".com", ".net", ".org"]:
         try:
@@ -411,12 +420,104 @@ def cmd_recibir_cualquier_mensaje(message):
             pass
     
     elif not message.chat.type == "private":
+        pass
+    
+    if str(message.chat.id) == str(admin) and not message.content_type == "text":
+        
+        match message.content_type:
+            case "video":
+                nombre = "video_{}.{}".format(message.from_user.id, message.video.mime_type.split("/")[-1])
+                tipo=message.video
+                
+            case "document":
+                nombre = "document_{}.{}".format(message.from_user.id, message.document.mime_type.split("/")[-1])
+                tipo = message.document
+                
+            case "audio":
+                nombre = "audio_{}.{}".format(message.from_user.id, message.audio.mime_type.split("/")[-1])
+                tipo = message.audio
+
+        
+        with open(nombre, "wb") as archivo:
+            try:
+                archivo.write(bot.download_file(bot.get_file(tipo.file_id).file_path))
+                
+            except Exception as e:
+                bot.send_message(message.chat.id, f"Ha ocurrido un error intentando descargar el archivo\n\nDescripcion:\n{e}")
+                return
+            
+            def comprimir_y_dividir_imagen(ruta_imagen, ruta_destino, tamano):
+                
+
+                """Comprime una imagen y divide el zip resultante en partes.
+
+                Args:
+                    ruta_imagen: Ruta de la imagen a comprimir.
+                    ruta_destino: Directorio donde guardar las partes del zip.
+                    num_partes: Número de partes en las que dividir el zip.
+                """
+                
+
+
+                nombre_zip = os.path.basename(ruta_imagen) + ".zip"
+                ruta_zip = os.path.join(ruta_destino, nombre_zip)
+
+                with zipfile.ZipFile(ruta_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                    zipf.write(ruta_imagen, os.path.basename(ruta_imagen))
+
+                tamano_zip = os.path.getsize(ruta_zip)
+                tamano_parte = tamano
+
+                
+                with open(ruta_zip, "rb") as f:
+                    data = f.read()
+
+                for i in range(int(tamano_zip / tamano_parte) + 1):
+                    inicio = i * tamano_parte
+                    fin = min((i + 1) * tamano_parte, tamano_zip)
+                    with open(f"{ruta_zip}.part.{i+1:03d}", "wb") as outfile:
+                        outfile.write(data[inicio:fin])
+                    
+
+                    with open(f"{ruta_zip}.part.{i+1:03d}", "rb") as outfile:
+                        bot.send_document(message.chat.id, telebot.types.InputFile(outfile.name))
+                        nombre_Del=outfile.name
+                        
+                        
+                    os.remove(nombre_Del)
+                    os.remove(ruta_zip)
+
+                
+
+
+
+
+
+            # Ejemplo de uso
+            try:
+                comprimir_y_dividir_imagen(os.path.abspath(archivo.name), ".", 1_048_576 * 15)
+                
+            except Exception as e:
+                
+                bot.send_message(message.chat.id, f"Ha ocurrido un error\n\nDescripcion:\n{e}")
+            
+            
+        try:
+            os.remove(nombre)
+            
+        except Exception as e:
+                
+                bot.send_message(message.chat.id, f"Ha ocurrido un error intentando borrar el archivo de compresion\n\nDescripcion:\n{e}")
         return
-    if message.from_user.language_code == "es":
+                        
+        
+    if message.from_user.language_code == "es":           
+        
         bot.send_message(message.chat.id, "Oye Mastodonte, tienes que enviarme algún comando para yo poder hacer algo 🤨\n\nEnvíame /help para empezar :)")
     else:
         bot.send_message(message.chat.id, "Hey Bulldog, you must send me some command for do something 🤨\n\nSend to me /help to start :)")
 
+    return
 
 
 
@@ -433,7 +534,26 @@ except:
     def flask():
         app.run(host="0.0.0.0", port=5000)
 
-
+    
+    @app.route("/webhook", methods=["GET", "POST"])
+    def webhook():
+        if request.method.lower() == "post":
+            try:
+                bot.send_message(admin, "¡¡Un mensaje entrante de la web!!\n\n<u>Contenido del mensaje</u>:\n" + str(json.loads(request.data)))
+                
+                return "¡Mensaje enviado!"
+            
+            except:
+                pass
+            
+                return "¡Error Enviando el Mensaje!"
+            
+        else:
+            
+            return "<h2>Este no es lugar para un forastero...</h2>"
+            
+            
+            
 
 
 

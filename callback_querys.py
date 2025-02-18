@@ -134,7 +134,7 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
         
         
     elif call.data=="Comprobar":
-        if bot.get_chat_member(bot.get_chat(grupo_vinculado_canal).id, call.from_user.id).status in ("member, administrator, creator"):
+        if bot.get_chat_member(bot.get_chat(grupo_vinculado_canal).id, call.from_user.id).status in ("member, administrator, creator") or bot.get_chat_member(bot.get_chat(grupo_vinculado_canal).id, call.from_user.id).can_send_messages:
             if call.from_user.language_code=="es":
                 bot.answer_callback_query(call.id, "¡Ya tú estabas en este lugar! ¡Ignora este mensaje que no es para ti!", True)
             else:
