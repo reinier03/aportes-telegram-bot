@@ -449,7 +449,7 @@ def cmd_recibir_cualquier_mensaje(message):
                 
             except Exception as e:
                 
-                bot.send_message(message.chat.id, "Ha ocurrido una excepción")
+                bot.send_message(message.chat.id, f"Ha ocurrido un error\n\nDescripcion:\n{e}")
                 
                 return
                 # file_path = bot.get_file(tipo.file_id).file_path
