@@ -13,13 +13,16 @@ from time import sleep
 import dill
 import callback_querys
 import requests
+import time
+import aportes_usefull_functions
 
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-
-
+#publicaciones_auto = diccionario de tipo de publicaciones automaticas que se envian al canal desde diferentes webs
+#Estructura: publicaciones_auto = { "otaku" : {"url" : "https://pic.re/image", "activo": True ,"frecuencia": 3, "texto_adjunto" : "#otaku" , proxima_publicacion: float(time.time())}}
+publicaciones_auto = {}
 canal=os.environ["canal"]
 bot=telebot.TeleBot(os.environ["token"], parse_mode="html", disable_web_page_preview=True)
 diccionario_publicaciones={}
@@ -86,7 +89,8 @@ def guardar_variables():
             "lista_usuarios_baneados": lista_usuarios_baneados,
             "grupo_vinculado_canal" : grupo_vinculado_canal,
             "publicaciones_canal" : publicaciones_canal,
-            "publicaciones_usuarios" : publicaciones_usuarios
+            "publicaciones_usuarios" : publicaciones_usuarios,
+            "publicaciones_auto" : publicaciones_auto
         }
         dill.dump(lista, archive)
     return
@@ -112,15 +116,23 @@ def cmd_panel(message):
         return
     
     panel_administrador=InlineKeyboardMarkup(row_width=1)
-    panel_administrador.add(InlineKeyboardButton("Dejar de/Volver a Recibir mensajes del Canal", callback_data="Parar canal"))
-    panel_administrador.add(InlineKeyboardButton("Dejar de/Volver a Recibir mensajes de Usuarios", callback_data="Parar Usuarios"))
-    panel_administrador.add(InlineKeyboardButton("Banear a un usuario 🙍‍♂️❌", callback_data="Banear Usuario"))
-    panel_administrador.add(InlineKeyboardButton("Desbanear a un usuario 🙍‍♂️➕", callback_data="Desbanear Usuario"))
+    panel_administrador.add(InlineKeyboardButton("Administrar Mensajes 👀📋", callback_data="admin_msg"))
+    # panel_administrador.add(InlineKeyboardButton("Dejar de/Volver a Recibir mensajes del Canal", callback_data="Parar canal"))
+    # panel_administrador.add(InlineKeyboardButton("Dejar de/Volver a Recibir mensajes de Usuarios", callback_data="Parar Usuarios"))
+    
+    panel_administrador.add(InlineKeyboardButton("Administrar Usuarios 🙍‍♂️", callback_data="Admin Usuarios"))
+    # panel_administrador.add(InlineKeyboardButton("Banear a un usuario 🙍‍♂️❌", callback_data="Banear Usuario"))
+    # panel_administrador.add(InlineKeyboardButton("Desbanear a un usuario 🙍‍♂️➕", callback_data="Desbanear Usuario"))
+    # panel_administrador.add(InlineKeyboardButton("Ver lista de usuarios baneados 👀📋", callback_data="Ver Lista"))
+    # panel_administrador.add(InlineKeyboardButton("Ver username de usuario por ID 👀", callback_data="ver usuario"))
+    
     panel_administrador.add(InlineKeyboardButton("Definir Grupo Adjunto 👥", callback_data="Grupo Adjunto"))
-    panel_administrador.add(InlineKeyboardButton("Ver lista de usuarios baneados 👀📋", callback_data="Ver Lista"))
-    panel_administrador.add(InlineKeyboardButton("Enviar copia de seguridad 🎁", callback_data="Enviar Archivo"))
-    panel_administrador.add(InlineKeyboardButton("Recibir copia de seguridad ✒", callback_data="Recibir Archivo"))
-    panel_administrador.add(InlineKeyboardButton("Ver username de usuario por ID 👀", callback_data="ver usuario"))
+    panel_administrador.add(InlineKeyboardButton("Copia de Seguridad 🎁", callback_data="Copia de Seguridad"))
+    # panel_administrador.add(InlineKeyboardButton("Enviar copia de seguridad 🎁", callback_data="Enviar Archivo"))
+    # panel_administrador.add(InlineKeyboardButton("Recibir copia de seguridad ✒", callback_data="Recibir Archivo"))
+    
+    panel_administrador.add(InlineKeyboardButton("Administrar Publicaciones Automáticas", callback_data="admin_auto"))
+    
     panel_administrador.add(InlineKeyboardButton("Ver variables del script 👀🗒", callback_data="script"))
     bot.send_message(admin, "Qué pretendes hacer?", reply_markup=panel_administrador)
 
@@ -135,7 +147,7 @@ def cmd_process_callback(call):
     global publicaciones_canal
     global canal
     global grupo_vinculado_canal
-    return callback_querys.recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, publicaciones_canal, canal, grupo_vinculado_canal)
+    return callback_querys.recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, publicaciones_canal, canal, grupo_vinculado_canal, publicaciones_auto)
 
 
 
@@ -325,7 +337,8 @@ def recibir_publicacion(message, mostrar_nombre):
             
         
         #Luego de cerrado el archivo, borraré el documento
-    os.remove(diccionario_publicaciones[message.chat.id][0])                
+    os.remove(diccionario_publicaciones[message.chat.id][0])  
+    del diccionario_publicaciones[message.chat.id]               
     bot.send_message(message.chat.id, f"Mensaje enviado exitosamente :) Revisa el canal @{bot.get_chat(canal).username} para que veas la publicación\n\n¡Gracias por tu #aporte! :D")
     return
 
@@ -351,10 +364,15 @@ def cmd_recibir_mensajes_canal(message):
 
 @bot.message_handler(commands=["host"])
 def cmd_host(message):
+    
+    bot.send_message(message.chat.id, "Hora del host: " + str(time.localtime()))
+    
     try:
         bot.send_message(message.chat.id, request.host_url)
     except:
         bot.send_message(message.chat.id, "No pude :(")
+        
+        
     
 
 
