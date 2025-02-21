@@ -12,6 +12,7 @@ from random import randint
 from time import sleep
 import dill
 import callback_querys
+import requests
 
 
 
@@ -417,12 +418,16 @@ def cmd_recibir_cualquier_mensaje(message):
             bot.send_message(message.from_user.id, f"<u>ES:</u>\nNo puedes enviar spam a <a href='{bot.get_chat(grupo_vinculado_canal).invite_link}'>{bot.get_chat(grupo_vinculado_canal).title}</a>!\n\n<u>EN:</u>\nYou can't send spam to <a href='{bot.get_chat(grupo_vinculado_canal).invite_link}'>{bot.get_chat(grupo_vinculado_canal).title}</a>!")
             
         except:
-            pass
+            return
     
     elif not message.chat.type == "private":
-        pass
+        return
+    
+    
     
     if str(message.chat.id) == str(admin) and not message.content_type == "text":
+        
+    
         
         match message.content_type:
             case "video":
@@ -443,11 +448,29 @@ def cmd_recibir_cualquier_mensaje(message):
                 archivo.write(bot.download_file(bot.get_file(tipo.file_id).file_path))
                 
             except Exception as e:
-                bot.send_message(message.chat.id, f"Ha ocurrido un error intentando descargar el archivo\n\nDescripcion:\n{e}")
+                
+                bot.send_message(message.chat.id, "Ha ocurrido una excepción")
+                
                 return
+                # file_path = bot.get_file(tipo.file_id).file_path
+                # download_url = "https://api.telegram.org/file/bot{}/{}".format(os.environ["token"], file_path)
+
+
+                # # Descarga por streaming
+                # response = requests.get(download_url, stream=True)
+                # response.raise_for_status() # Lanza una excepción para errores HTTP
+
+                # # Ruta donde guardar el archivo
+
+
+                # for chunk in response.iter_content(chunk_size=8192): # Tamaño del chunk
+                #     archivo.write(chunk)
+                    
+        
             
             def comprimir_y_dividir_imagen(ruta_imagen, ruta_destino, tamano):
                 
+                breakpoint()
 
                 """Comprime una imagen y divide el zip resultante en partes.
 
@@ -511,7 +534,7 @@ def cmd_recibir_cualquier_mensaje(message):
         return
                         
         
-    if message.from_user.language_code == "es":           
+    if message.from_user.language_code == "es" and message.chat:           
         
         bot.send_message(message.chat.id, "Oye Mastodonte, tienes que enviarme algún comando para yo poder hacer algo 🤨\n\nEnvíame /help para empezar :)")
     else:
