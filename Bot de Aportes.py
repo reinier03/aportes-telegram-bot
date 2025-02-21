@@ -15,13 +15,14 @@ import callback_querys
 import requests
 import time
 import aportes_usefull_functions
+import Auto_Publicaciones_Class
 
 
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 #publicaciones_auto = diccionario de tipo de publicaciones automaticas que se envian al canal desde diferentes webs
-#Estructura: publicaciones_auto = { "otaku" : {"url" : "https://pic.re/image", "activo": True ,"frecuencia": 3, "texto_adjunto" : "#otaku" , proxima_publicacion: float(time.time())}}
+#Estructura: publicaciones_auto = { "otaku" : {"activo": True ,"frecuencia": 3, "texto_adjunto" : "#otaku" , proxima_publicacion: float(time.time())}}
 publicaciones_auto = {}
 canal=os.environ["canal"]
 bot=telebot.TeleBot(os.environ["token"], parse_mode="html", disable_web_page_preview=True)

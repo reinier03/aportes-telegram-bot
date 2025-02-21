@@ -5,6 +5,8 @@ from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeybo
 import threading as t
 from aportes_usefull_functions import enviar_mensajes
 import aportes_usefull_functions
+import Auto_Publicaciones_Class
+import telebot
 
 
     
@@ -57,7 +59,7 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
             
         elif publicaciones_canal==True:
             publicaciones_canal=False
-            bot.send_message(call.from_user.id, "He dejado de Monitoriar las publicaciones del canal/grupo <a href='{bot.get_chat(canal).invite_link}'>{bot.get_chat(canal).title}</a> :( \n\nCuando quieras nuevamente que las administre vuelve a presionar el mismo botón que presionaste para desactivarlas")
+            bot.send_message(call.from_user.id, f"He dejado de Monitoriar las publicaciones del canal/grupo <a href='{bot.get_chat(canal).invite_link}'>{bot.get_chat(canal).title}</a> :( \n\nCuando quieras nuevamente que las administre vuelve a presionar el mismo botón que presionaste para desactivarlas")
             
         guardar_variables(lista_usuarios_baneados, publicaciones_usuarios , publicaciones_canal, grupo_vinculado_canal, publicaciones_auto)
         return
@@ -349,7 +351,7 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
         
     elif call.data == "admin_auto":
         if not publicaciones_auto.get("otaku"):
-            publicaciones_auto["otaku"] = {"url" : "https://pic.re/image", "texto_adjunto" : "#otaku"}
+            publicaciones_auto["otaku"] = Auto_Publicaciones_Class.Otaku()
             
         
             
@@ -367,13 +369,15 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
     elif "p_" in call.data:
         
         if "otaku" in call.data:
+            if not publicaciones_auto.get("otaku"):
+                publicaciones_auto["otaku"] = Auto_Publicaciones_Class.Otaku()
             
             if "_f" in call.data:
-                if not publicaciones_auto["otaku"]["frecuencia"]:
+                if not publicaciones_auto["otaku"].frecuencia:
                     msg = enviar_mensajes(bot, call, "A continuación elige la frecuencia con la que se enviarán los mensajes\n\nEjemplo:\n3\n\nExplicación:\nAl definir una frecuencia de n veces, publicaré de forma que se reparta esas veces equitativamente por todo el día, en el caso del ejemplo (3 veces) haré publicaciones cada 8 horas, completando así las 24 horas con 3 publicaciones\n\n\nA continuación de este mensaje escribe la frecuencia NUMÉRICA de veces que quieres que se publique")
                 
                 else: 
-                    msg = enviar_mensajes(bot, call, f"Frecuencia actual de Publicaciones: {publicaciones_auto["otaku"]["frecuencia"]} vez/veces cada 24 horas\n\nA continuación elige la frecuencia con la que se enviarán los mensajes\n\nEjemplo:\n3\n\nExplicación:\nAl definir una frecuencia de n veces, publicaré de forma que se reparta esas veces equitativamente por todo el día, en el caso del ejemplo (3 veces) haré publicaciones cada 8 horas, completando así las 24 horas con 3 publicaciones\n\n\nA continuación de este mensaje escribe la frecuencia NUMÉRICA de veces que quieres que se publique")
+                    msg = enviar_mensajes(bot, call, f"Frecuencia actual de Publicaciones: {publicaciones_auto["otaku"].frecuencia} vez/veces cada 24 horas\n\nA continuación elige la frecuencia con la que se enviarán los mensajes\n\nEjemplo:\n3\n\nExplicación:\nAl definir una frecuencia de n veces, publicaré de forma que se reparta esas veces equitativamente por todo el día, en el caso del ejemplo (3 veces) haré publicaciones cada 8 horas, completando así las 24 horas con 3 publicaciones\n\n\nA continuación de este mensaje escribe la frecuencia NUMÉRICA de veces que quieres que se publique")
                     
                 
                 def frecuencia_otaku(message):
@@ -382,12 +386,13 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
                         return
                     
                     else:
-                        publicaciones_auto["otaku"]["frecuencia"] = int(message.text)
-                        bot.send_message(call.from_user.id, f"¡Muy bien!, Se publicará cada {int(24 / publicaciones_auto["otaku"]["frecuencia"])} hora(s) y {int(24 / publicaciones_auto["otaku"]["frecuencia"]) * 60 %60} minuto(s)\n\nCuando quieres empezar a publicar")
+                        publicaciones_auto["otaku"].frecuencia = int(message.text)
+                        bot.send_message(call.from_user.id, f"¡Muy bien!, Se publicará cada {int(24 / publicaciones_auto["otaku"].frecuencia)} hora(s) y {int((24 / publicaciones_auto["otaku"].frecuencia) * 60 %60 ) } minuto(s)\n\nCuando quieres empezar a publicar dale al botón que apareció anteriormente llamado 'Empezar a Publicar'")
                         
                         
-                    publicaciones_auto["otaku"]["activo"] = False
-                    publicaciones_auto["otaku"]["proxima_publicacion"] = time.time()
+                    publicaciones_auto["otaku"].activo = False
+                    publicaciones_auto["otaku"].proxima_publicacion = time.time()
+                    publicaciones_auto["otaku"].tiempo_espera = int((24 / publicaciones_auto["otaku"].frecuencia) * 60 * 60)
                     
                     return
                         
@@ -401,11 +406,11 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
             elif "_p" in call.data:
                 
                 if "/s" in call.data:
-                    publicaciones_auto["otaku"]["activo"] = False
+                    publicaciones_auto["otaku"].activo = False
                     enviar_mensajes(bot, call, "¡Hilo de Publicaciones #otaku detenido!")
                     
                 elif "/p" in call.data:
-                    publicaciones_auto["otaku"]["activo"] = True
+                    publicaciones_auto["otaku"].activo = True
                     
                     contador = False
                     for i in t.enumerate():
@@ -418,7 +423,53 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
                         
                     
                     enviar_mensajes(bot, call, "¡Hilo de Publicaciones #otaku iniciado!")
+            
+            elif "_s" in call.data:
+                contador = 0
+                
+                while True:
+                    try:
+                        
                     
+                        contenido = publicaciones_auto.get("otaku").enviar_info()
+                        if not os.path.isfile(contenido):
+                            bot.send_message(os.environ["admin"], f"Ha ocurrido un error intentando adquirir el contenido para #otaku\n\nDescripción:\n{str(contenido)}")
+                            return
+                        
+                        
+                        bot.send_photo(canal , telebot.types.InputFile(contenido) , caption=publicaciones_auto.get("otaku").texto_adjunto)
+                        
+                        break
+                    
+                    except Exception as e:
+                        if "non-empty" in str(e):
+                            if contador >= 5:
+                                bot.send_message(os.environ["admin"], f"Ha ocurrido un error intentando adquirir el contenido para #otaku\n\nDescripción:\n{str(e)}")
+                                return
+
+                            contador+=1
+                            continue
+                        
+                        else:
+                            bot.send_message(os.environ["admin"], f"Ha ocurrido un error intentando adquirir el contenido para #otaku\n\nDescripción:\n{str(e)}")
+                            return
+                    
+                    
+                
+                os.remove(contenido)
+                
+                return
+            
+            
+            elif "_c" in call.data:
+                msg = enviar_mensajes(bot, call, "Envia a continuación el texto que quieres poner de Caption")
+                
+                def crear_caption(message):
+                    publicaciones_auto.get("otaku").texto_adjunto = message.text
+                    
+                    bot.send_message(call.from_user.id, "Muy bien, el caption de los mensajes son de la siguiente forma:\n\n{}".format(publicaciones_auto.get("otaku").texto_adjunto))
+                
+                bot.register_next_step_handler(msg, crear_caption)
                     
                 
             
@@ -427,15 +478,18 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
             else:
                 markup = InlineKeyboardMarkup()
                 markup.add(
+                    InlineKeyboardButton("Enviar ESTE Post Ahora", callback_data="p_otaku_s"),
                     InlineKeyboardButton("Cambiar la frecuencia", callback_data="p_otaku_f"),
+                    InlineKeyboardButton("Cambiar el caption", callback_data="p_otaku_c"),
+                    row_width=1
                     
                 )
                 
-                if publicaciones_auto["otaku"]["activo"] == True:
+                if publicaciones_auto["otaku"].activo == True:
                     markup.add(InlineKeyboardButton("Dejar de Publicar", callback_data="p_otaku_p/s"))
                     
                 else:
-                    markup.add(InlineKeyboardButton("Empezar a Publicar", "p_otaku_p/p"))
+                    markup.add(InlineKeyboardButton("Empezar a Publicar", callback_data="p_otaku_p/p"))
                     
                 
                 bot.send_message(call.from_user.id, "Qué pretendes hacer con estas publicaciones?", reply_markup = markup)
@@ -443,11 +497,11 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
         
     elif call.data=="script":
         if grupo_vinculado_canal:
-            bot.send_message(call.from_user.id, f"\n<a href='{bot.get_chat(grupo_vinculado_canal).invite_link}'>Grupo Vinculado</a>: <code>{grupo_vinculado_canal}</code>\n<a href='{bot.get_chat(canal).invite_link}'>Canal</a>: <code>{canal}</code>\nSe monitorea el canal: {publicaciones_canal}\nSe recibe aportes: {publicaciones_usuarios}")
+            bot.send_message(call.from_user.id, f"\n<a href='{bot.get_chat(grupo_vinculado_canal).invite_link}'>Grupo Vinculado</a>: <code>{grupo_vinculado_canal}</code>\n<a href='{bot.get_chat(canal).invite_link}'>Canal</a>: <code>{canal}</code>\nSe monitorea el canal: {publicaciones_canal}\nSe recibe aportes: {publicaciones_usuarios}\nPublicaciones Automaticas: {publicaciones_auto}")
         else:
-            bot.send_message(call.from_user.id, f"Grupo Vinculado': <code>{grupo_vinculado_canal}</code>\n<a href='{bot.get_chat(canal).invite_link}'>Canal</a>: <code>{canal}</code>\nSe monitorea el canal: {publicaciones_canal}\nSe recibe aportes: {publicaciones_usuarios}")
+            bot.send_message(call.from_user.id, f"Grupo Vinculado': <code>{grupo_vinculado_canal}</code>\n<a href='{bot.get_chat(canal).invite_link}'>Canal</a>: <code>{canal}</code>\nSe monitorea el canal: {publicaciones_canal}\nSe recibe aportes: {publicaciones_usuarios}\nPublicaciones Automaticas: {publicaciones_auto}")
         
         
-    bot.answer_callback_query(call.id)
+    
     guardar_variables(lista_usuarios_baneados, publicaciones_usuarios , publicaciones_canal, grupo_vinculado_canal, publicaciones_auto)
     return

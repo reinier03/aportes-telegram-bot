@@ -3,6 +3,7 @@ import time
 import os
 import requests
 import telebot
+import Auto_Publicaciones_Class
 
 
 admin = os.environ["admin"]
@@ -165,15 +166,6 @@ def enviar_mensajes(bot, call, texto, markup=False , msg=False, delete=False):
 
 
 
-def otaku():
-    try:
-        res = requests.get("https://pic.re/image")
-        with open("otaku.png", "wb") as foto:
-            foto.write(res.content)
-            return os.path.abspath(foto.name)
-        
-    except Exception as e:
-        return e.args
         
     
     
@@ -185,35 +177,62 @@ def auto_publicaciones(publicaciones_auto, bot, canal=os.environ["canal"]):
         #-------------comprobación---------------
         contador = []
         for key, item in publicaciones_auto.items():
-            if item["activo"] == True:
+            if item.activo == True:
                 contador.append(item)
                 
         if len(contador) == 0:
             break
         
         for key, item in  publicaciones_auto.items():
-            if item["activo"] == True:
+            if item.activo == True and time.time() >= item.proxima_publicacion:
                 
                 #otaku-------------------------------------
                 if key == "otaku":
-                    contenido = otaku()
+                    contenido = item.enviar_info()
                     
                     if not os.path.isfile(contenido):
                         bot.send_message(os.environ["admin"], f"Ha ocurrido un error intentando adquirir el contenido para #otaku\n\nDescripción:\n{str(contenido)}")
                         continue
                     else:
                         
-                        try:
-                            bot.send_photo(canal , telebot.types.InputFile(contenido) , caption=item["texto_adjunto"])
+                        contador = 0
                         
-                        except Exception as e:
-                            bot.send_message(os.environ["admin"], f"Ha ocurrido un error intentando enviar la publicacion #otaku\n\nDescripción:\n{str(e.args)}")
-            
+                        while True:
+                            
+                            try:
+                                
+                            
+                                contenido = publicaciones_auto.get("otaku").enviar_info()
+                                if not os.path.isfile(contenido):
+                                    bot.send_message(os.environ["admin"], f"Ha ocurrido un error intentando adquirir el contenido para #otaku\n\nDescripción:\n{str(contenido)}")
+                                    return
+                                
+                                
+                                bot.send_photo(canal , telebot.types.InputFile(contenido) , caption=publicaciones_auto.get("otaku").texto_adjunto)
+                                
+                                break
+                            
+                            except Exception as e:
+                                if "non-empty" in str(e):
+                                    if contador >= 5:
+                                        bot.send_message(os.environ["admin"], f"Ha ocurrido un error intentando adquirir el contenido para #otaku\n\nDescripción:\n{str(e)}")
+                                        return
+
+                                    contador+=1
+                                    continue
+                                
+                                else:
+                                    bot.send_message(os.environ["admin"], f"Ha ocurrido un error intentando adquirir el contenido para #otaku\n\nDescripción:\n{str(e)}")
+                                    return
+                
                         try:
                             os.remove(contenido)
                         
                         except Exception as e:
                             bot.send_message(os.environ["admin"], f"Ha ocurrido un error intentando eliminar la publicacion #otaku\n\nDescripción:\n{str(e.args)}")
+                            
+                        item.proxima_publicacion = time.time() + item.tiempo_espera
+                        
                 #otaku-end-------------------------
                             
         
