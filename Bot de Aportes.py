@@ -105,7 +105,7 @@ bot.set_my_commands([
     telebot.types.BotCommand("/help", "Ofrece ayuda sobre el funcionamiento de este bot"),
     telebot.types.BotCommand("/enviar", "Para enviar una publicación al canal"),
     telebot.types.BotCommand("/panel", "Sólo disponible para mi creador :)")
-])
+], telebot.types.BotCommandScopeAllPrivateChats())
 
 
 @bot.message_handler(commands=["panel"])
@@ -187,6 +187,20 @@ def cmd_ingresar(message):
         if i == bot.get_chat(message.from_user.id).id:
             bot.send_message(message.chat.id, f"Al parecer mi administrador @{bot.get_chat(admin).username} te baneó por alguna razón y ya no puedes hacer aportes al canal @{bot.get_chat(canal).username}\nTe habrás portado mal seguramente, ni idea, soy solamente un bot 😐\n\nVe a hablar con él y pídele explicación👇👇", reply_markup=InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton("El Administrador", url=f"https://t.me/{bot.get_chat(admin).username}")))
             return
+    
+    if message.text.split(" "):
+        canal_destino = int(message.text.split(" ")[1])
+        
+        
+    else:
+                    
+        bot.send_message(message.chat.id, f"¿A cuál de los canales planeas hacer el aporte?\n\n<a href='{bot.get_chat(-1001161864648).username}'>{bot.get_chat(-1001161864648).title}</a> (Toca para ver más información)\n<a href='{bot.get_chat(-1001795230328).username}'>{bot.get_chat(-1001795230328).title}</a> (Toca para ver más información)\n\n", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(bot.get_chat(-1001161864648).title, callback_data="canal:-1001161864648")][InlineKeyboardButton(bot.get_chat(-1001795230328).title, callback_data="canal:-1001795230328")]]))
+        
+        @bot.callback_query_handler(func=lambda call: "canal:" in call.data)
+        def extraer(call):
+            canal_destino = int(call.data.split(":")[1])
+            return canal_destino
+    
     markup=ReplyKeyboardMarkup(
         resize_keyboard=True,
         one_time_keyboard=True,
@@ -195,9 +209,9 @@ def cmd_ingresar(message):
     )
     markup.add("Si", "No")
     msg=bot.send_message(message.chat.id, "¿Quieres mostrar tu nombre en el aporte?\n\n(Presiona en '<b>Si</b>' Para que se envíe tu usuario como autor'\nPresiona <b>No</b>' Para que sea un aporte anónimo)", reply_markup=markup)
-    bot.register_next_step_handler(msg, hacer_aporte)
+    bot.register_next_step_handler(msg, hacer_aporte, canal_destino)
     
-def hacer_aporte(message):
+def hacer_aporte(message, canal_destino):
     mostrar_nombre=""
     if message.text=="Si":
         bot.send_message(message.chat.id, "Muy bien, mostraré tu nombre en la publicación", reply_markup=ReplyKeyboardRemove())
@@ -211,10 +225,10 @@ def hacer_aporte(message):
     
     
     msg=bot.send_message(message.chat.id, f"Perfecto! Acontinuación <b>ENVÍAME</b> lo que quieres que se publique :) \n\n<u>Contenido Aceptado por el Bot</u>:\n<b>Imágenes</b>\n<b>Vídeos</b>\n<b>Música</b>\n<b>Documentos</b> (PDF, EPUB, etcétera)\n <b>Encuestas</b> que envíe El Usuario\n-Más allá de esos archivos, no serán aceptado a no ser que a futuro @{bot.get_chat(admin).username} lo decida-\n\nNota Importante:\nEl límite de peso de los documentos es de 50 MB mientras que para los vídeos, fotos y archivos de audio son de 20 MB, no sobrepases el límite con el peso de tus archivos o no se enviará lo que quieres compartir")
-    bot.register_next_step_handler(msg, recibir_publicacion, mostrar_nombre)
+    bot.register_next_step_handler(msg, recibir_publicacion, mostrar_nombre, canal_destino)
     
     
-def recibir_publicacion(message, mostrar_nombre):
+def recibir_publicacion(message, mostrar_nombre, canal_destino):
     global diccionario_publicaciones
     if message.content_type=="text":
         bot.send_message(message.chat.id, "No está permitido que sea <b>Solamente texto</b>....\nEnvía una foto, un vídeo o una canción que quieras compartir con los demás :) \n\nEscribe nuevamente /enviar para intentarlo nuevamente")
@@ -284,54 +298,54 @@ def recibir_publicacion(message, mostrar_nombre):
         if message.caption:
             if diccionario_publicaciones[message.chat.id][2]=="photo":
                 if mostrar_nombre==False:
-                    bot.send_photo(canal, photo=archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_photo(canal_destino, photo=archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 else:                        
-                    bot.send_photo(canal, photo=archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_photo(canal_destino, photo=archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 
             elif diccionario_publicaciones[message.chat.id][2]=="video":
                 if mostrar_nombre==False:
-                    bot.send_video(canal, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_video(canal_destino, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 else:                        
-                    bot.send_video(canal, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_video(canal_destino, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 
             elif diccionario_publicaciones[message.chat.id][2]=="audio":
                 if mostrar_nombre==False:
-                    bot.send_audio(canal, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_audio(canal_destino, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 else:                        
-                    bot.send_audio(canal, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_audio(canal_destino, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 
             else:
                 if mostrar_nombre==False:
-                    bot.send_document(canal, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_document(canal_destino, archive , caption=f"{message.caption}\n\n#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 else:                        
-                    bot.send_document(canal, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_document(canal_destino, archive , caption=f"{message.caption}\n\n#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
             
         else: #Si no tiene texto, adjunto, lo mismo pero sin el texto
             
             if diccionario_publicaciones[message.chat.id][2]=="photo":
                 if mostrar_nombre==False:
-                    bot.send_photo(canal, photo=archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_photo(canal_destino, photo=archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 else:                        
-                    bot.send_photo(canal, photo=archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_photo(canal_destino, photo=archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 
             
             elif diccionario_publicaciones[message.chat.id][2]=="video":
                 if mostrar_nombre==False:
-                    bot.send_video(canal, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_video(canal_destino, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 else:                        
-                    bot.send_video(canal, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_video(canal_destino, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 
             elif diccionario_publicaciones[message.chat.id][2]=="audio":
                 if mostrar_nombre==False:
-                    bot.send_audio(canal, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_audio(canal_destino, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 else:                        
-                    bot.send_audio(canal, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_audio(canal_destino, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 
             else:
                 if mostrar_nombre==False:
-                    bot.send_document(canal, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_document(canal_destino, archive , caption=f"#aporte (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
                 else:                        
-                    bot.send_photo(canal, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
+                    bot.send_photo(canal_destino, archive , caption=f"#aporte de @{bot.get_chat(message.from_user.id).username} (<code>{bot.get_chat(message.from_user.id).id}</code>)\nPara hacer tu aporte escríbeme a @{bot.user.username} ;)")
         
 
 
@@ -347,16 +361,17 @@ def recibir_publicacion(message, mostrar_nombre):
 
             
 
-@bot.channel_post_handler(func=lambda message: int(message.chat.id) == bot.get_chat(canal).id and publicaciones_canal==True, content_types=["photo", "video", "document", "audio"])
+@bot.channel_post_handler(func=lambda message: int(message.chat.id) == bot.get_chat(canal).id and publicaciones_canal==True or message.chat.id == -1001795230328, content_types=["photo", "video", "document", "audio"])
+#-1001795230328 > @LastHentai
 def cmd_recibir_mensajes_canal(message):
-    print("Entró por el caption del canal")
     if not (message.content_type=="video" or message.content_type=="photo" or message.content_type=="audio" or message.content_type=="document"):
         return
     try:
         if message.caption:
-            bot.edit_message_caption(f"{message.caption}\n\n@{bot.get_chat(canal).username}\n\nPara realizar aportes al canal escriba al bot @{bot.user.username}", canal , message.message_id)
+            message.caption = message.caption.split("http")[0]
+            bot.edit_message_caption(f"{message.caption}\n\n@{bot.get_chat(message.chat.id).username}\n\nPara realizar aportes al canal escriba al bot <a href='https://t.me/{bot.user.username}?enviar={message.chat.id}'>@{bot.user.username}</a>", message.chat.id , message.message_id)
         else:
-            bot.edit_message_caption(f"@{bot.get_chat(canal).username}\n\nPara realizar aportes al canal escriba al bot @{bot.user.username}", canal , message.message_id)
+            bot.edit_message_caption(f"@{bot.get_chat(message.chat.id).username}\n\nPara realizar aportes al canal escriba al bot <a href='https://t.me/{bot.user.username}?enviar={message.chat.id}'>@{bot.user.username}</a>", message.chat.id , message.message_id)
     except:
         pass
     
@@ -371,7 +386,7 @@ def cmd_host(message):
     try:
         bot.send_message(message.chat.id, request.host_url)
     except:
-        bot.send_message(message.chat.id, "No pude :(")
+        bot.send_message(message.chat.id, "No pude hayar la URL :(")
         
         
     
@@ -427,7 +442,6 @@ def cmd_control_group(message):
 @bot.message_handler(func=lambda x: True, )
 @bot.message_handler(content_types=['audio','video', 'document'])
 def cmd_recibir_cualquier_mensaje(message):
-    print("Entró por el caption de todos los mensajes restantes")
     
 
 
