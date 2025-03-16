@@ -18,7 +18,7 @@ import aportes_usefull_functions
 import Auto_Publicaciones_Class
 
 
-
+telebot.apihelper.ENABLE_MIDDLEWARE = True
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 #publicaciones_auto = diccionario de tipo de publicaciones automaticas que se envian al canal desde diferentes webs
@@ -31,6 +31,9 @@ lista_usuarios_baneados=[]
 publicaciones_canal=True
 publicaciones_usuarios=True
 admin=os.environ["admin"]
+lista_canales=[]
+dict_temp={}
+lista_canales = [-1002220806720]
 
 try:
     grupo_vinculado_canal=os.environ["grupo"]
@@ -108,6 +111,12 @@ bot.set_my_commands([
 ], telebot.types.BotCommandScopeAllPrivateChats())
 
 
+@bot.middleware_handler()
+def middleware(bot, update):
+    if update.callback_query:
+        print(update.callback_query.data)
+        return
+
 @bot.message_handler(commands=["panel"])
 def cmd_panel(message):
     if not message.chat.type == "private":
@@ -148,29 +157,20 @@ def cmd_process_callback(call):
     global publicaciones_canal
     global canal
     global grupo_vinculado_canal
+    
+    
     return callback_querys.recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, publicaciones_canal, canal, grupo_vinculado_canal, publicaciones_auto)
 
-
-
-
-@bot.message_handler(commands=["start", "help"])
-def cmd_start(message):
-    if not message.chat.type == "private":
-        return
-    if message.from_user.language_code=="es":
-        bot.send_message(message.chat.id, f"<b>Bienvenido al Bot de Aportes de @{bot.get_chat(canal).username}</b> 😁\n\nLa idea con este bot es que los usuarios TAMBIÉN aporten contenido al canal además de los propios admins\n\n<u>Contenido Aceptado por el Bot</u>:\n<b>Imágenes</b>\n<b>Vídeos</b>\n<b>Música</b>\n<b>Documentos</b> (PDF, EPUB, etcétera)\n <b>Encuestas</b> que envíe El Usuario\n-Más allá de esos archivos, no serán aceptado a no ser que a futuro @{bot.get_chat(admin).username} lo decida-\n\nNota Importante:\nEl límite de peso de los documentos es de 50 MB mientras que para los vídeos, fotos y archivos de audio son de 20 MB, no sobrepases el límite con el peso de tus archivos o no se enviará lo que quieres compartir\n\n¿Qué esperas? Empieza llevando tu contenido a nuestro canal escribiendo /enviar :)")
-        bot.send_message(message.chat.id, "Este bot está desarrollado por @mistakedelalaif\nSi quieres un bot igual o parecido contáctalo y te lo hará:)")
-        
-    else:
-        bot.send_message(message.chat.id, f"Welcome to the Contribution Bot of @{bot.get_chat(canal).username} 😁\n\nThe idea with this bot is that users ALSO contribute content to the channel in addition to the admins themselves\n\n<u>Content Accepted by the Bot</u>:\nImages\nVideos\nMusic\nDocuments (PDF, EPUB, etc.)\nSurveys sent by the User\n-Beyond those files, they will not be accepted unless in the future @{bot.get_chat(admin ).username} decide-\n\nImportant Note:\nThe weight limit for documents is 50 MB while for videos, photos and audio files they are 20 MB, do not exceed the limit with the weight of your files or what you want to share will not be sent\n\nWhat are you waiting for?  Start by bringing your content to our channel by typing /enviar :)")
-        bot.send_message(message.chat.id, "This bot is developed by @mistakedelalaif\nIf you want the same or similar bot, contact him and he will make it for you:)")
-    return
     
     
     
 @bot.message_handler(commands=["enviar"])
 def cmd_ingresar(message):
     global diccionario_publicaciones
+    
+    bot.send_message(message.chat.id, "Función desactivada temporalmente :(")
+    return
+    
     if not message.chat.type == "private":
         return
         
@@ -188,28 +188,43 @@ def cmd_ingresar(message):
             bot.send_message(message.chat.id, f"Al parecer mi administrador @{bot.get_chat(admin).username} te baneó por alguna razón y ya no puedes hacer aportes al canal @{bot.get_chat(canal).username}\nTe habrás portado mal seguramente, ni idea, soy solamente un bot 😐\n\nVe a hablar con él y pídele explicación👇👇", reply_markup=InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton("El Administrador", url=f"https://t.me/{bot.get_chat(admin).username}")))
             return
     
-    if message.text.split(" "):
-        canal_destino = int(message.text.split(" ")[1])
+    if len(message.text.split()) > 1:
+        canal_destino = int(message.text.split()[1])
         
         
     else:
-                    
-        bot.send_message(message.chat.id, f"¿A cuál de los canales planeas hacer el aporte?\n\n<a href='{bot.get_chat(-1001161864648).username}'>{bot.get_chat(-1001161864648).title}</a> (Toca para ver más información)\n<a href='{bot.get_chat(-1001795230328).username}'>{bot.get_chat(-1001795230328).title}</a> (Toca para ver más información)\n\n", reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton(bot.get_chat(-1001161864648).title, callback_data="canal:-1001161864648")][InlineKeyboardButton(bot.get_chat(-1001795230328).title, callback_data="canal:-1001795230328")]]))
+        dict_temp[message.chat.id] = {}
+        dict_temp[message.chat.id]["texto"] = ""
+        dict_temp[message.chat.id]["canales"] = InlineKeyboardMarkup()
+        for canal in lista_canales:
+            try:
+                dict_temp[message.chat.id]["texto"] += f"<a href='{bot.get_chat(canal).username}'>{bot.get_chat(canal).title}</a> (Toca para ver más información)\n"
+                
+                dict_temp[message.chat.id]["canales"].row(InlineKeyboardButton(bot.get_chat(canal).title, callback_data=f"canal:{canal}"))
+                
+            except Exception as e:
+                bot.send_message(admin, f"Ha ocurrido un error intentando obtener información de un canal, el canal {canal} ha sido eliminado")
+                continue
         
-        @bot.callback_query_handler(func=lambda call: "canal:" in call.data)
-        def extraer(call):
-            canal_destino = int(call.data.split(":")[1])
-            return canal_destino
+        
+        bot.send_message(message.chat.id, f"¿A cuál de los canales planeas hacer el aporte?\n\n{dict_temp[message.chat.id]["texto"]}", reply_markup=dict_temp[message.chat.id]["canales"])
+        
+        def anonimato(message, canal_destino):
+            markup=ReplyKeyboardMarkup(
+                resize_keyboard=True,
+                one_time_keyboard=True,
+                row_width=2,
+                input_field_placeholder="¿Quieres mostrar tu nombre en el #aporte?"
+            )
+            markup.add("Si", "No")
+            msg=bot.send_message(message.chat.id, "¿Quieres mostrar tu nombre en el aporte?\n\n(Presiona en '<b>Si</b>' Para que se envíe tu usuario como autor'\nPresiona <b>No</b>' Para que sea un aporte anónimo)", reply_markup=markup)
+            bot.register_next_step_handler(msg, hacer_aporte, canal_destino)
+        
+        
+
     
-    markup=ReplyKeyboardMarkup(
-        resize_keyboard=True,
-        one_time_keyboard=True,
-        row_width=2,
-        input_field_placeholder="¿Quieres mostrar tu nombre en el #aporte?"
-    )
-    markup.add("Si", "No")
-    msg=bot.send_message(message.chat.id, "¿Quieres mostrar tu nombre en el aporte?\n\n(Presiona en '<b>Si</b>' Para que se envíe tu usuario como autor'\nPresiona <b>No</b>' Para que sea un aporte anónimo)", reply_markup=markup)
-    bot.register_next_step_handler(msg, hacer_aporte, canal_destino)
+
+
     
 def hacer_aporte(message, canal_destino):
     mostrar_nombre=""
@@ -359,6 +374,24 @@ def recibir_publicacion(message, mostrar_nombre, canal_destino):
 
 
 
+
+@bot.message_handler(commands=["start", "help"])
+def cmd_start(message):
+    if len(message.text.split()) > 1:
+        cmd_ingresar(message)
+    if not message.chat.type == "private":
+        return
+    if message.from_user.language_code=="es":
+        bot.send_message(message.chat.id, f"<b>Bienvenido al Bot de Aportes de @{bot.get_chat(canal).username}</b> 😁\n\nLa idea con este bot es que los usuarios TAMBIÉN aporten contenido al canal además de los propios admins\n\n<u>Contenido Aceptado por el Bot</u>:\n<b>Imágenes</b>\n<b>Vídeos</b>\n<b>Música</b>\n<b>Documentos</b> (PDF, EPUB, etcétera)\n <b>Encuestas</b> que envíe El Usuario\n-Más allá de esos archivos, no serán aceptado a no ser que a futuro @{bot.get_chat(admin).username} lo decida-\n\nNota Importante:\nEl límite de peso de los documentos es de 50 MB mientras que para los vídeos, fotos y archivos de audio son de 20 MB, no sobrepases el límite con el peso de tus archivos o no se enviará lo que quieres compartir\n\n¿Qué esperas? Empieza llevando tu contenido a nuestro canal escribiendo /enviar :)")
+        bot.send_message(message.chat.id, "Este bot está desarrollado por @mistakedelalaif\nSi quieres un bot igual o parecido contáctalo y te lo hará:)")
+        
+    else:
+        bot.send_message(message.chat.id, f"Welcome to the Contribution Bot of @{bot.get_chat(canal).username} 😁\n\nThe idea with this bot is that users ALSO contribute content to the channel in addition to the admins themselves\n\n<u>Content Accepted by the Bot</u>:\nImages\nVideos\nMusic\nDocuments (PDF, EPUB, etc.)\nSurveys sent by the User\n-Beyond those files, they will not be accepted unless in the future @{bot.get_chat(admin ).username} decide-\n\nImportant Note:\nThe weight limit for documents is 50 MB while for videos, photos and audio files they are 20 MB, do not exceed the limit with the weight of your files or what you want to share will not be sent\n\nWhat are you waiting for?  Start by bringing your content to our channel by typing /enviar :)")
+        bot.send_message(message.chat.id, "This bot is developed by @mistakedelalaif\nIf you want the same or similar bot, contact him and he will make it for you:)")
+    return
+
+
+
             
 
 @bot.channel_post_handler(func=lambda message: int(message.chat.id) == bot.get_chat(canal).id and publicaciones_canal==True or message.chat.id == -1001795230328, content_types=["photo", "video", "document", "audio"])
@@ -369,9 +402,9 @@ def cmd_recibir_mensajes_canal(message):
     try:
         if message.caption:
             message.caption = message.caption.split("http")[0]
-            bot.edit_message_caption(f"{message.caption}\n\n@{bot.get_chat(message.chat.id).username}\n\nPara realizar aportes al canal escriba al bot <a href='https://t.me/{bot.user.username}?enviar={message.chat.id}'>@{bot.user.username}</a>", message.chat.id , message.message_id)
+            bot.edit_message_caption(f"{message.caption}\n\n@{bot.get_chat(message.chat.id).username}\n\nPara realizar aportes al canal escriba al bot <a href='https://t.me/{bot.user.username}?start={message.chat.id}'>@{bot.user.username}</a>", message.chat.id , message.message_id)
         else:
-            bot.edit_message_caption(f"@{bot.get_chat(message.chat.id).username}\n\nPara realizar aportes al canal escriba al bot <a href='https://t.me/{bot.user.username}?enviar={message.chat.id}'>@{bot.user.username}</a>", message.chat.id , message.message_id)
+            bot.edit_message_caption(f"@{bot.get_chat(message.chat.id).username}\n\nPara realizar aportes al canal escriba al bot <a href='https://t.me/{bot.user.username}?start={message.chat.id}'>@{bot.user.username}</a>", message.chat.id , message.message_id)
     except:
         pass
     
@@ -418,7 +451,7 @@ def cmd_control_group(message):
             else:
                 markup=InlineKeyboardMarkup(row_width=1)
                 markup.add(InlineKeyboardButton(text="Join to channel here 🎯", url=enlace))
-                markup.add(InlineKeyboardButton(text="Check ✨", callback_data="Comprobar"))
+                markup.add(InlineKeyboardButton(text="Check ✨", callback_data=f"Comprobar:{message.from_user.id}"))
                 
                 if member.username:
                     bot.send_message(message.chat.id, f"Sorry @{member.username} looks like you are not member of <a href='{bot.get_chat(canal).invite_link}'>{bot.get_chat(canal).title}</a>.\n\nJoin yourself here and come back again to join to this group pressing '<b>Check ✨</b>' :)", reply_markup=markup)
@@ -503,7 +536,6 @@ def cmd_recibir_cualquier_mensaje(message):
             
             def comprimir_y_dividir_imagen(ruta_imagen, ruta_destino, tamano):
                 
-                breakpoint()
 
                 """Comprime una imagen y divide el zip resultante en partes.
 
@@ -578,38 +610,36 @@ def cmd_recibir_cualquier_mensaje(message):
 
 
 
-try:
-    print(f"La dirección del servidor es:{request.host_url}")
-except:
-    app = Flask(__name__)
 
-    @app.route('/')
-    def index():
-        return "Hello World"
+app = Flask(__name__)
 
-    def flask():
-        app.run(host="0.0.0.0", port=5000)
 
-    
-    @app.route("/webhook", methods=["GET", "POST"])
-    def webhook():
-        if request.method.lower() == "post":
-            try:
-                bot.send_message(admin, "¡¡Un mensaje entrante de la web!!\n\n<u>Contenido del mensaje</u>:\n" + str(json.loads(request.data)))
-                
-                return "¡Mensaje enviado!"
+@app.route('/')
+def index():
+    return "Hello World"
+
+
+@app.route("/webhook", methods=["GET", "POST"])
+def webhook():
+    if request.method.lower() == "post":
+        try:
+            bot.send_message(admin, "¡¡Un mensaje entrante de la web!!\n\n<u>Contenido del mensaje</u>:\n" + str(request.data))
             
-            except:
-                pass
-            
-                return "¡Error Enviando el Mensaje!"
-            
-        else:
-            
-            return "<h2>Este no es lugar para un forastero...</h2>"
-            
-            
-            
+            return "¡Mensaje enviado!"
+        
+        except:
+            pass
+        
+            return "¡Error Enviando el Mensaje!"
+        
+    else:
+        
+        return "<h2>Este no es lugar para un forastero...</h2>"
+        
+        
+
+def flask():
+    app.run(host="0.0.0.0", port=5000)
 
 
 

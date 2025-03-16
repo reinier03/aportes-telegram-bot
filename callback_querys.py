@@ -7,6 +7,7 @@ from aportes_usefull_functions import enviar_mensajes
 import aportes_usefull_functions
 import Auto_Publicaciones_Class
 import telebot
+import re
 
 
     
@@ -180,34 +181,39 @@ def recibir_querys(bot, call, lista_usuarios_baneados, publicaciones_usuarios, p
             if call.from_user.language_code=="es":
                 if bot.get_chat(call.from_user.id).username:
                     bot.send_message(bot.get_chat(grupo_vinculado_canal).id, f"Bienvenido/a @{bot.get_chat(call.from_user.id).username}, cuéntanos de tí :)")
-                    try:
-                        bot.delete_message(bot.get_chat(grupo_vinculado_canal).id, call.message.message_id)
-                        print("Mensaje eliminado correctamente")
-                    except Exception as e:
-                        print("Excepción:" + str(e))
+                    #si el ususario que dió en el botón es el mismo que el que se unió al grupo entonces se elimina el mensaje de verificación
+                    if int(re.search(r":.*", call.data).group().replace(":")) == call.from_user.id:
+                        try:
+                            bot.delete_message(bot.get_chat(grupo_vinculado_canal).id, call.message.message_id)
+                        except Exception as e:
+                            print("Excepción:" + str(e))
                     
                 else:
                     bot.send_message(bot.get_chat(grupo_vinculado_canal).id, f"Bienvenido/a {bot.get_chat(call.from_user.id).first_name}, cuéntanos de tí :)")
-                    try:
-                        bot.delete_message(bot.get_chat(grupo_vinculado_canal).id, call.message.message.id)
-                        print("Mensaje eliminado correctamente")
-                    except Exception as e:
-                        print("Excepción:" + str(e))
+                    
+                    if int(re.search(r":.*", call.data).group().replace(":")) == call.from_user.id:
+                        try:
+                            bot.delete_message(bot.get_chat(grupo_vinculado_canal).id, call.message.message.id)
+                            print("Mensaje eliminado correctamente")
+                        except Exception as e:
+                            print("Excepción:" + str(e))
             
             else:
                 if bot.get_chat(call.from_user.id).username:
                     bot.send_message(bot.get_chat(grupo_vinculado_canal).id, f"Welcome @{bot.get_chat(call.from_user.id).username}, tell us about you :)")
-                    try:
-                        bot.delete_message(bot.get_chat(grupo_vinculado_canal).id, call.message.message.id)
-                    except Exception as e:
-                        print("Excepción:" + str(e))
+                    if int(re.search(r":.*", call.data).group().replace(":")) == call.from_user.id:
+                        try:
+                            bot.delete_message(bot.get_chat(grupo_vinculado_canal).id, call.message.message.id)
+                        except Exception as e:
+                            print("Excepción:" + str(e))
                     
                 else:
                     bot.send_message(bot.get_chat(grupo_vinculado_canal).id, f"Welcome {bot.get_chat(call.from_user.id).first_name}, tell us about you :)")
-                    try:
-                        bot.delete_message(bot.get_chat(grupo_vinculado_canal).id, call.message.message.id)
-                    except Exception as e:
-                        print("Excepción:" + str(e))
+                    if int(re.search(r":.*", call.data).group().replace(":")) == call.from_user.id:
+                        try:
+                            bot.delete_message(bot.get_chat(grupo_vinculado_canal).id, call.message.message.id)
+                        except Exception as e:
+                            print("Excepción:" + str(e))
         else:
             if call.from_user.language_code=="es":
                 bot.answer_callback_query(call.id, "¡Aún no eres miembro del canal/grupo!", show_alert=True)
